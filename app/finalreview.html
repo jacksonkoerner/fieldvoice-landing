@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>RPR Daily Report - FieldVoice Pro</title>
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
+    <meta name="theme-color" content="#0a1628">
+
+    <!-- iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FieldVoice">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="./js/config.js"></script>
+    <script src="./js/supabase-utils.js"></script>
+    <script src="./js/ui-utils.js"></script>
+    <script src="./js/storage-keys.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ============ BASE STYLES ============ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 10pt;
+            line-height: 1.3;
+            color: #000;
+            background: #f0f0f0;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* ============ SCREEN-ONLY HEADER ============ */
+        .screen-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #0a1628;
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .screen-header h1 {
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .screen-header .header-date {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .header-btn {
+            padding: 8px 16px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .btn-home {
+            background: transparent;
+            color: #94a3b8;
+            border: 1px solid #475569;
+        }
+        .btn-home:hover { background: #1e293b; color: white; }
+
+        .btn-edit {
+            background: #1e3a5f;
+            color: white;
+        }
+        .btn-edit:hover { background: #2d4a6f; }
+
+        .btn-submit {
+            background: #16a34a;
+            color: white;
+        }
+        .btn-submit:hover { background: #15803d; }
+
+        /* ============ PAGE CONTAINER ============ */
+        .page-container {
+            max-width: 8.5in;
+            margin: 20px auto;
+            background: transparent;
+            overflow-x: hidden;
+        }
+
+        .page {
+            width: 100%;
+            max-width: 8.5in;
+            min-height: 11in;
+            padding: 0.4in 0.5in;
+            background: white;
+            position: relative;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            margin-bottom: 50px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .page:last-child {
+            margin-bottom: 0;
+        }
+
+        .page-break {
+            page-break-after: always;
+            break-after: page;
+        }
+
+        /* Ensure all sections stay within page bounds */
+        .section-header,
+        .work-summary,
+        .text-section,
+        .photos-header-info,
+        .photos-grid {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* ============ REPORT HEADER ============ */
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid #4a7c34;
+        }
+
+        .report-logo {
+            max-height: 50px;
+            max-width: 200px;
+        }
+
+        .report-logo-placeholder {
+            font-size: 11px;
+            font-weight: bold;
+            color: #1e3a5f;
+            text-transform: uppercase;
+        }
+
+        .report-title {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #4a7c34;
+            text-align: right;
+        }
+
+        /* ============ SECTION HEADERS ============ */
+        .section-header {
+            background: #4a7c34;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            padding: 6px 10px;
+            font-size: 10pt;
+            text-transform: uppercase;
+            margin-top: 12px;
+            border: 1px solid #000;
+            border-bottom: none;
+        }
+
+        .section-header:first-child {
+            margin-top: 0;
+        }
+
+        /* ============ PROJECT OVERVIEW TABLE ============ */
+        .overview-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .overview-table {
+            width: 100%;
+            min-width: 500px;
+            border-collapse: collapse;
+            font-size: 9pt;
+            border: 1px solid #000;
+            border-top: none;
+        }
+
+        .overview-table td {
+            border: 1px solid #000;
+            padding: 4px 8px;
+            vertical-align: top;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .overview-table .label {
+            font-weight: bold;
+            background: #f5f5f5;
+            white-space: nowrap;
+        }
+
+        .overview-table .value {
+        }
+
+        /* Weather sub-table */
+        .weather-row td {
+            padding: 2px 8px;
+        }
+
+        .weather-label {
+            font-weight: bold;
+            background: #f5f5f5;
+            width: 140px;
+        }
+
+        .weather-sub {
+            padding-left: 20px !important;
+            background: #fafafa;
+        }
+
+        /* Signature area */
+        .signature-cell {
+            text-align: center;
+            vertical-align: middle;
+            height: 60px;
+        }
+
+        .signature-name {
+            font-size: 16pt;
+            font-family: 'Brush Script MT', cursive, Arial;
+            color: #1e3a5f;
+        }
+
+        .signature-details {
+            font-size: 7pt;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        /* ============ DAILY WORK SUMMARY ============ */
+        .work-summary {
+            border: 1px solid #000;
+            border-top: none;
+            padding: 10px;
+            font-size: 9pt;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+        }
+
+        .contractor-block {
+            margin-bottom: 12px;
+        }
+
+        .contractor-block:last-child {
+            margin-bottom: 0;
+        }
+
+        .contractor-name {
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .contractor-narrative {
+            margin-bottom: 6px;
+        }
+
+        .contractor-details {
+            font-size: 8pt;
+            text-transform: uppercase;
+        }
+
+        /* ============ OPERATIONS TABLE ============ */
+        .ops-table {
+            width: 100%;
+            min-width: 500px;
+            border-collapse: collapse;
+            font-size: 8pt;
+            margin: 0;
+            border: 1px solid #000;
+            border-top: none;
+        }
+
+        .ops-table th {
+            background: #f5f5f5;
+            border: 1px solid #000;
+            padding: 4px 3px;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 6pt;
+            white-space: nowrap;
+        }
+
+        .ops-table td {
+            border: 1px solid #000;
+            padding: 4px 3px;
+            text-align: center;
+            font-size: 8pt;
+        }
+
+        .ops-table td:first-child,
+        .ops-table td:nth-child(2) {
+            text-align: left;
+        }
+
+        /* ============ EQUIPMENT TABLE ============ */
+        .equip-table {
+            width: 100%;
+            min-width: 500px;
+            border-collapse: collapse;
+            font-size: 8pt;
+            margin: 0;
+            border: 1px solid #000;
+            border-top: none;
+        }
+
+        .equip-table th {
+            background: #f5f5f5;
+            border: 1px solid #000;
+            padding: 4px 3px;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 6pt;
+        }
+
+        .equip-table td {
+            border: 1px solid #000;
+            padding: 3px;
+            text-align: center;
+            font-size: 8pt;
+            word-wrap: break-word;
+        }
+
+        .equip-table td:first-child,
+        .equip-table td:nth-child(2) {
+            text-align: left;
+        }
+
+        /* ============ TEXT SECTIONS ============ */
+        .text-section {
+            border: 1px solid #000;
+            border-top: none;
+            padding: 8px 10px;
+            min-height: 40px;
+            font-size: 9pt;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+        }
+
+        .text-section ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .text-section li {
+            margin-bottom: 4px;
+        }
+
+        .text-section p {
+            margin: 0;
+        }
+
+        .na-text {
+            color: #666;
+        }
+
+        /* ============ MISSING FIELD HIGHLIGHTING ============ */
+        .missing-field {
+            border: 2px solid #dc2626 !important;
+            background-color: #fef2f2 !important;
+        }
+
+        .incomplete-banner {
+            background: #fef2f2;
+            border-bottom: 2px solid #dc2626;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .incomplete-banner-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #991b1b;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .incomplete-banner-content i {
+            font-size: 16px;
+        }
+
+        .incomplete-banner-dismiss {
+            background: transparent;
+            border: 1px solid #dc2626;
+            color: #dc2626;
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .incomplete-banner-dismiss:hover {
+            background: #dc2626;
+            color: white;
+        }
+
+        @media print {
+            .incomplete-banner {
+                display: none !important;
+            }
+        }
+
+        /* ============ SAFETY SECTION ============ */
+        .safety-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .safety-checkboxes {
+            display: flex;
+            gap: 20px;
+            font-size: 9pt;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .checkbox-box {
+            width: 12px;
+            height: 12px;
+            border: 1px solid #000;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .checkbox-box.checked {
+            background: #000;
+            color: white;
+        }
+
+        /* ============ PHOTOS SECTION ============ */
+        .photos-header-info {
+            border: 1px solid #000;
+            border-bottom: none;
+            padding: 6px 10px;
+            font-size: 9pt;
+        }
+
+        .photos-header-info table {
+            width: auto;
+        }
+
+        .photos-header-info td {
+            padding: 2px 10px 2px 0;
+        }
+
+        .photos-header-info .photo-label {
+            font-weight: bold;
+        }
+
+        .photos-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border: 1px solid #000;
+            border-top: none;
+        }
+
+        .photo-cell {
+            border: 1px solid #ccc;
+            padding: 8px;
+            min-height: 280px;
+        }
+
+        .photo-cell:nth-child(odd) {
+            border-right: 1px solid #000;
+        }
+
+        .photo-cell:nth-child(1),
+        .photo-cell:nth-child(2) {
+            border-top: 1px solid #000;
+        }
+
+        .photo-image {
+            width: 100%;
+            height: 200px;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+
+        .photo-image img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .photo-image.empty {
+            color: #999;
+            font-size: 9pt;
+        }
+
+        .photo-meta {
+            font-size: 8pt;
+            margin-bottom: 4px;
+        }
+
+        .photo-meta span {
+            font-weight: bold;
+        }
+
+        .photo-caption {
+            font-size: 8pt;
+            font-style: italic;
+            color: #333;
+        }
+
+        /* ============ PAGE FOOTER ============ */
+        .page-footer {
+            position: absolute;
+            bottom: 0.3in;
+            left: 0.5in;
+            right: 0.5in;
+            text-align: center;
+            font-size: 8pt;
+            color: #666;
+            border-top: 1px solid #ccc;
+            padding-top: 4px;
+        }
+
+        /* ============ PRINT STYLES ============ */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+
+            .screen-header {
+                display: none !important;
+            }
+
+            .page-container {
+                max-width: none;
+                margin: 0;
+                box-shadow: none;
+                background: white;
+            }
+
+            .page {
+                width: 100%;
+                min-height: auto;
+                padding: 0.4in 0.5in;
+                margin: 0;
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            .page-break {
+                page-break-after: always;
+                break-after: page;
+            }
+
+            .overview-wrapper {
+                overflow: visible;
+            }
+
+            .section-header {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .overview-table .label,
+            .ops-table th,
+            .equip-table th {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .report-header {
+                border-bottom-color: #4a7c34;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .report-title {
+                color: #4a7c34;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            @page {
+                size: letter;
+                margin: 0;
+            }
+        }
+
+        /* ============ RESPONSIVE (screen only) ============ */
+        @media screen and (max-width: 900px) {
+            body {
+                background: #e5e5e5;
+            }
+
+            .page-container {
+                margin: 0;
+                max-width: 100%;
+                overflow-x: visible;
+                padding: 16px;
+            }
+
+            .page {
+                width: 100%;
+                min-width: 360px;
+                padding: 12px;
+                min-height: auto;
+                margin-bottom: 30px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                border-radius: 4px;
+            }
+
+            .report-header {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+
+            .report-title {
+                font-size: 14pt;
+                text-align: center;
+            }
+
+            .section-header {
+                font-size: 9pt;
+                padding: 5px 8px;
+            }
+
+            .work-summary {
+                padding: 8px;
+                font-size: 8pt;
+            }
+
+            .text-section {
+                padding: 6px 8px;
+                font-size: 8pt;
+            }
+
+            .overview-wrapper {
+                overflow-x: auto;
+                margin: 0 -12px;
+                padding: 0 12px;
+            }
+
+            .ops-table,
+            .equip-table {
+                font-size: 7pt;
+            }
+
+            .ops-table th,
+            .equip-table th {
+                padding: 3px 2px;
+                font-size: 5pt;
+            }
+
+            .ops-table td,
+            .equip-table td {
+                padding: 3px 2px;
+            }
+
+            .photos-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .photo-cell {
+                border-right: 1px solid #ccc !important;
+                min-height: 200px;
+            }
+
+            .photo-image {
+                height: 150px;
+            }
+
+            .page-footer {
+                position: relative;
+                bottom: auto;
+                left: auto;
+                right: auto;
+                margin-top: 20px;
+            }
+        }
+
+        /* v6.6.5: Editable field styles - invisible until focused */
+        .editable-field {
+            /* Invisible until focused */
+            border: none;
+            background: transparent;
+            resize: none;
+            padding: 0;
+            margin: 0;
+            font-family: inherit;
+            font-size: inherit;
+            line-height: inherit;
+            width: 100%;
+            min-height: 1.5em;
+            overflow: hidden;
+        }
+
+        .editable-field:focus {
+            /* Subtle highlight when editing */
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+            background: #f8fafc;
+        }
+
+        .editable-field:hover:not(:focus) {
+            /* Subtle hover hint */
+            background: #f1f5f9;
+        }
+
+        .editable-field.user-edited {
+            background: #fefce8;
+        }
+
+        .editable-field::placeholder {
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        /* Photo captions - smaller height */
+        .photo-caption.editable-field {
+            min-height: 1.2em;
+            font-size: 9pt;
+        }
+
+        /* Editable table cells */
+        .editable-cell {
+            border: none;
+            background: transparent;
+            padding: 0;
+            margin: 0;
+            font-family: inherit;
+            font-size: inherit;
+            text-align: center;
+            width: 100%;
+            min-width: 30px;
+        }
+
+        .editable-cell:focus {
+            outline: 2px solid #3b82f6;
+            outline-offset: 1px;
+            background: #f8fafc;
+        }
+
+        .editable-cell:hover:not(:focus) {
+            background: #f1f5f9;
+        }
+
+        td:first-child .editable-cell,
+        td:nth-child(2) .editable-cell {
+            text-align: left;
+        }
+
+        /* Print styles for editable fields */
+        @media print {
+            .editable-field,
+            .editable-cell {
+                border: none !important;
+                background: transparent !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                resize: none !important;
+                overflow: visible !important;
+                outline: none !important;
+            }
+
+            .editable-field:focus,
+            .editable-cell:focus {
+                outline: none !important;
+            }
+
+            /* Hide placeholder text in print */
+            .editable-field::placeholder,
+            .editable-cell::placeholder {
+                color: transparent !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- SCREEN-ONLY HEADER -->
+    <header class="screen-header">
+        <div>
+            <h1>RPR Daily Report</h1>
+            <div class="header-date" id="headerDate"></div>
+        </div>
+        <div class="header-buttons">
+            <a href="index.html" class="header-btn btn-home">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <button onclick="submitReport()" class="header-btn btn-submit">
+                <i class="fas fa-paper-plane"></i>
+                <span>Submit</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- INCOMPLETE FIELDS BANNER -->
+    <div id="incompleteBanner" class="incomplete-banner" style="display: none;">
+        <div class="incomplete-banner-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span id="incompleteBannerText">0 fields incomplete</span>
+        </div>
+        <button class="incomplete-banner-dismiss" onclick="dismissIncompleteBanner()">Dismiss</button>
+    </div>
+
+    <!-- PAGE CONTAINER -->
+    <div class="page-container">
+
+        <!-- ==================== PAGE 1 ==================== -->
+        <div class="page page-break" id="page1">
+            <!-- Report Header -->
+            <div class="report-header">
+                <div id="logoContainer">
+                    <div class="report-logo-placeholder" id="logoPlaceholder">
+                        LOUIS ARMSTRONG<br>NEW ORLEANS<br>INTERNATIONAL AIRPORT
+                    </div>
+                    <img id="logoImage" class="report-logo" style="display:none;" alt="Project Logo">
+                </div>
+                <div class="report-title">RPR DAILY REPORT</div>
+            </div>
+
+            <!-- Project Overview -->
+            <div class="section-header">Project Overview</div>
+            <div class="overview-wrapper">
+            <table class="overview-table">
+                <tr>
+                    <td class="label">PROJECT NAME:</td>
+                    <td class="value" id="projectName"></td>
+                    <td class="label">DATE:</td>
+                    <td class="value" id="reportDate"></td>
+                </tr>
+                <tr>
+                    <td class="label">NOAB PROJECT NO.:</td>
+                    <td class="value" id="noabProjectNo"></td>
+                    <td class="label">LOCATION:</td>
+                    <td class="value" id="location"></td>
+                </tr>
+                <tr>
+                    <td class="label">CNO SOLICITATION NO.:</td>
+                    <td class="value" id="cnoSolicitationNo"></td>
+                    <td class="label">ENGINEER:</td>
+                    <td class="value" id="engineer"></td>
+                </tr>
+                <tr>
+                    <td class="label">NOTICE TO PROCEED:</td>
+                    <td class="value" id="noticeToProceed"></td>
+                    <td class="label">CONTRACTOR:</td>
+                    <td class="value" id="contractor"></td>
+                </tr>
+                <tr>
+                    <td class="label">CONTRACT DURATION:</td>
+                    <td class="value" id="contractDuration"></td>
+                    <td class="label">START TIME:</td>
+                    <td class="value" id="startTime"></td>
+                </tr>
+                <tr>
+                    <td class="label">EXPECTED COMPLETION:</td>
+                    <td class="value" id="expectedCompletion"></td>
+                    <td class="label">END TIME:</td>
+                    <td class="value" id="endTime"></td>
+                </tr>
+                <tr>
+                    <td class="label">CONTRACT DAY #:</td>
+                    <td class="value" id="contractDay"></td>
+                    <td class="label">SHIFT DURATION:</td>
+                    <td class="value" id="shiftDuration"></td>
+                </tr>
+                <tr>
+                    <td class="label">WEATHER DAYS:</td>
+                    <td class="value" id="weatherDays"></td>
+                    <td class="label">COMPLETED BY:</td>
+                    <td class="value" id="completedBy"></td>
+                </tr>
+                <!-- Weather Row -->
+                <tr class="weather-row">
+                    <td class="weather-label" rowspan="5">WEATHER:</td>
+                    <td id="weatherTemps" colspan="1"></td>
+                    <td class="label" rowspan="5">SIGNATURE:</td>
+                    <td class="signature-cell" rowspan="5" id="signatureCell">
+                        <div class="signature-name" id="signatureName"></div>
+                        <div class="signature-details" id="signatureDetails"></div>
+                    </td>
+                </tr>
+                <tr class="weather-row">
+                    <td class="weather-sub" id="weatherPrecip"></td>
+                </tr>
+                <tr class="weather-row">
+                    <td class="weather-sub" id="weatherCondition"></td>
+                </tr>
+                <tr class="weather-row">
+                    <td class="weather-sub" id="weatherJobSite"></td>
+                </tr>
+                <tr class="weather-row">
+                    <td class="weather-sub" id="weatherAdverse"></td>
+                </tr>
+            </table>
+            </div><!-- end overview-wrapper -->
+
+            <!-- Daily Work Summary -->
+            <div class="section-header">Daily Work Summary</div>
+            <div class="work-summary">
+                <p style="font-weight:bold; margin-bottom:8px;">Construction Activities Performed and Observed on this Date:</p>
+                <div id="workSummaryContent">
+                    <!-- Contractor blocks will be inserted here -->
+                </div>
+            </div>
+
+            <div class="page-footer">1 of <span class="total-pages">4</span></div>
+        </div>
+
+        <!-- ==================== PAGE 2 ==================== -->
+        <div class="page page-break" id="page2">
+            <!-- Report Header (repeated) -->
+            <div class="report-header">
+                <div id="logoContainer2">
+                    <div class="report-logo-placeholder" id="logoPlaceholder2">
+                        LOUIS ARMSTRONG<br>NEW ORLEANS<br>INTERNATIONAL AIRPORT
+                    </div>
+                    <img id="logoImage2" class="report-logo" style="display:none;" alt="Project Logo">
+                </div>
+                <div class="report-title">RPR DAILY REPORT</div>
+            </div>
+
+            <!-- Daily Operations Table -->
+            <div class="section-header">Daily Operations</div>
+            <div class="overview-wrapper">
+            <table class="ops-table">
+                <thead>
+                    <tr>
+                        <th>CONTRACTOR</th>
+                        <th>TRADE</th>
+                        <th>SUPER(S)</th>
+                        <th>FOREMAN</th>
+                        <th>OPERATOR(S)</th>
+                        <th>LABORER(S)</th>
+                        <th>SURVEYOR(S)</th>
+                        <th>OTHER(S)</th>
+                    </tr>
+                </thead>
+                <tbody id="operationsTableBody">
+                    <!-- Rows will be inserted here -->
+                </tbody>
+            </table>
+            </div>
+
+            <!-- Equipment Table -->
+            <div class="section-header">Mobilized Equipment & Daily Utilization</div>
+            <div class="overview-wrapper">
+            <table class="equip-table">
+                <thead>
+                    <tr>
+                        <th>CONTRACTOR</th>
+                        <th>EQUIPMENT TYPE / MODEL #</th>
+                        <th>QTY</th>
+                        <th>NOTES</th>
+                    </tr>
+                </thead>
+                <tbody id="equipmentTableBody">
+                    <!-- Rows will be inserted here -->
+                </tbody>
+            </table>
+            </div>
+
+            <!-- Issues Section -->
+            <div class="section-header">General Issues; Unforeseen Conditions; Notices Given</div>
+            <div class="text-section" id="issuesContent">
+                <ul><li class="na-text">N/A.</li></ul>
+            </div>
+
+            <!-- Communications Section -->
+            <div class="section-header">Communications with the Contractor</div>
+            <div class="text-section" id="communicationsContent">
+                <ul><li class="na-text">N/A.</li></ul>
+            </div>
+
+            <div class="page-footer">2 of <span class="total-pages">4</span></div>
+        </div>
+
+        <!-- ==================== PAGE 3 ==================== -->
+        <div class="page page-break" id="page3">
+            <!-- Report Header (repeated) -->
+            <div class="report-header">
+                <div id="logoContainer3">
+                    <div class="report-logo-placeholder" id="logoPlaceholder3">
+                        LOUIS ARMSTRONG<br>NEW ORLEANS<br>INTERNATIONAL AIRPORT
+                    </div>
+                    <img id="logoImage3" class="report-logo" style="display:none;" alt="Project Logo">
+                </div>
+                <div class="report-title">RPR DAILY REPORT</div>
+            </div>
+
+            <!-- QA/QC Section -->
+            <div class="section-header">QA/QC Testing and/or Inspections</div>
+            <div class="text-section" id="qaqcContent">
+                <ul><li class="na-text">N/A.</li></ul>
+            </div>
+
+            <!-- Safety Section -->
+            <div class="section-header">
+                <div class="safety-header">
+                    <span>Safety Report</span>
+                </div>
+            </div>
+            <div class="text-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <span style="font-weight:bold;">Incident(s) on this Date:</span>
+                    <div class="safety-checkboxes">
+                        <div class="checkbox-item">
+                            <span class="checkbox-box" id="checkYes"></span>
+                            <span>Yes</span>
+                        </div>
+                        <div class="checkbox-item">
+                            <span class="checkbox-box" id="checkNo">X</span>
+                            <span>No</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="safetyContent">
+                    <ul><li class="na-text">N/A.</li></ul>
+                </div>
+            </div>
+
+            <!-- Visitors Section -->
+            <div class="section-header">Visitors; Deliveries; Additional Contract and/or Change Order Activities; Other Remarks</div>
+            <div class="text-section" id="visitorsContent">
+                <ul><li class="na-text">N/A.</li></ul>
+            </div>
+
+            <div class="page-footer">3 of <span class="total-pages">4</span></div>
+        </div>
+
+        <!-- ==================== PAGE 4 (Photos) ==================== -->
+        <div class="page" id="page4">
+            <!-- Report Header (repeated) -->
+            <div class="report-header">
+                <div id="logoContainer4">
+                    <div class="report-logo-placeholder" id="logoPlaceholder4">
+                        LOUIS ARMSTRONG<br>NEW ORLEANS<br>INTERNATIONAL AIRPORT
+                    </div>
+                    <img id="logoImage4" class="report-logo" style="display:none;" alt="Project Logo">
+                </div>
+                <div class="report-title">RPR DAILY REPORT</div>
+            </div>
+
+            <!-- Photos Section -->
+            <div class="section-header">Daily Photos</div>
+            <div class="photos-header-info">
+                <table>
+                    <tr>
+                        <td class="photo-label">Project Name:</td>
+                        <td id="photoProjectName"></td>
+                    </tr>
+                    <tr>
+                        <td class="photo-label">Project #:</td>
+                        <td id="photoProjectNo"></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="photos-grid" id="photosGrid">
+                <!-- Photo cells will be inserted here -->
+            </div>
+
+            <div class="page-footer"><span id="photoPageNum">4</span> of <span class="total-pages">4</span></div>
+        </div>
+
+    </div><!-- END page-container -->
+
+    <!-- Final Review Page Logic -->
+    <script src="./js/finalreview.js"></script>
+</body>
+</html>

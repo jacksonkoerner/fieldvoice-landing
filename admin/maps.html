@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FieldVoice Pro — Job Site Maps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --dot-navy: #0a1628;
+            --dot-blue: #1e3a5f;
+            --dot-slate: #334155;
+            --dot-orange: #ea580c;
+            --dot-yellow: #f59e0b;
+            --safety-green: #16a34a;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1d32; color: #e2e8f0; margin: 0; }
+        .safety-stripe { height: 6px; background: repeating-linear-gradient(-45deg, #f59e0b, #f59e0b 10px, #0a1628 10px, #0a1628 20px); }
+        .sidebar { width: 260px; min-height: 100vh; background: #0a1628; border-right: 1px solid #1e3a5f; transition: width 0.3s; }
+        .sidebar.collapsed { width: 72px; }
+        .sidebar.collapsed .nav-text, .sidebar.collapsed .brand-text, .sidebar.collapsed .sidebar-section-label { display: none; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 12px 0; }
+        .sidebar.collapsed .nav-item i { margin-right: 0; font-size: 1.2rem; }
+        .nav-item { display: flex; align-items: center; padding: 10px 20px; color: #94a3b8; text-decoration: none; border-radius: 8px; margin: 2px 12px; transition: all 0.2s; font-size: 0.9rem; }
+        .nav-item:hover { background: #1e3a5f; color: #f59e0b; }
+        .nav-item.active { background: #1e3a5f; color: #f59e0b; border-left: 3px solid #f59e0b; }
+        .nav-item i { width: 20px; margin-right: 12px; text-align: center; }
+        .sidebar-section-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: #475569; padding: 16px 20px 4px; }
+        .map-tab { padding: 10px 24px; font-size: 0.85rem; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; }
+        .map-tab:hover { background: rgba(30,58,95,0.5); }
+        .map-tab.active { background: #1e3a5f; color: #f59e0b; border-color: #f59e0b; }
+        .map-container { border-radius: 12px; border: 1px solid #2d4a6f; overflow: hidden; }
+        .project-card { background: linear-gradient(135deg, #1e3a5f 0%, #0a1628 100%); border: 1px solid #2d4a6f; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s; }
+        .project-card:hover { border-color: #f59e0b; transform: translateY(-1px); }
+        .project-card.selected { border-color: #f59e0b; box-shadow: 0 0 0 1px #f59e0b; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #94a3b8; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; }
+        #mainMap { height: calc(100vh - 220px); min-height: 500px; }
+        .leaflet-popup-content-wrapper { background: #0a1628; color: #e2e8f0; border: 1px solid #1e3a5f; border-radius: 8px; }
+        .leaflet-popup-tip { background: #0a1628; border: 1px solid #1e3a5f; }
+        .leaflet-popup-content { margin: 12px 16px; }
+        .spinner { display: flex; align-items: center; justify-content: center; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,29,50,0.9); z-index: 1000; border-radius: 12px; }
+    </style>
+</head>
+<body>
+    <div class="safety-stripe"></div>
+    <div class="flex">
+        <!-- Sidebar -->
+        <nav class="sidebar flex flex-col" id="sidebar">
+            <div class="p-5 flex items-center justify-between border-b border-[#1e3a5f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-gradient-to-br from-[#ea580c] to-[#f59e0b] rounded-lg flex items-center justify-center">
+                        <i class="fas fa-microphone-lines text-white text-sm"></i>
+                    </div>
+                    <div class="brand-text">
+                        <div class="text-sm font-bold text-white leading-tight">FieldVoice</div>
+                        <div class="text-xs text-[#f59e0b] font-semibold">PRO ADMIN</div>
+                    </div>
+                </div>
+                <button onclick="toggleSidebar()" class="text-[#64748b] hover:text-[#f59e0b] transition">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            <div class="flex-1 py-4">
+                <div class="sidebar-section-label">Main</div>
+                <a href="index.html" class="nav-item"><i class="fas fa-gauge-high"></i><span class="nav-text">Command Center</span></a>
+                <a href="reports.html" class="nav-item"><i class="fas fa-file-lines"></i><span class="nav-text">Reports</span></a>
+                <a href="messages.html" class="nav-item"><i class="fas fa-comments"></i><span class="nav-text">Messages</span></a>
+                <a href="photos.html" class="nav-item"><i class="fas fa-camera"></i><span class="nav-text">Photos</span></a>
+                <a href="maps.html" class="nav-item active"><i class="fas fa-map-location-dot"></i><span class="nav-text">Job Site Maps</span></a>
+                <div class="sidebar-section-label">Operations</div>
+                <a href="deliveries.html" class="nav-item"><i class="fas fa-truck"></i><span class="nav-text">Deliveries</span></a>
+                <a href="calendar.html" class="nav-item"><i class="fas fa-calendar-days"></i><span class="nav-text">Calendar</span></a>
+                <div class="sidebar-section-label">Intelligence</div>
+                <a href="ai-insights.html" class="nav-item"><i class="fas fa-brain"></i><span class="nav-text">AI Insights</span></a>
+                <a href="users.html" class="nav-item"><i class="fas fa-users-gear"></i><span class="nav-text">Users</span></a>
+            </div>
+            <div class="p-4 border-t border-[#1e3a5f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-[#ea580c] flex items-center justify-center text-white text-sm font-bold">JK</div>
+                    <div class="nav-text">
+                        <div class="text-xs font-medium text-white">Jackson Koerner</div>
+                        <div class="text-xs text-[#64748b]">Admin</div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-auto" style="max-height: calc(100vh - 6px);">
+            <!-- Top Bar -->
+            <div class="flex items-center justify-between px-8 py-4 border-b border-[#1e3a5f] bg-[#0a1628]/50">
+                <div>
+                    <h1 class="text-xl font-bold text-white">Job Site Maps</h1>
+                    <p class="text-sm text-[#64748b]">Project locations with weather radar, drone airspace &amp; satellite imagery</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: #ea580c;"></div>
+                        <span>Active Project</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: #3b82f6;"></div>
+                        <span>Inspector Location</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 space-y-5">
+                <!-- Map Type Tabs + Project Filter Row -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1" style="-ms-overflow-style:none;scrollbar-width:none;">
+                        <div class="map-tab active" onclick="switchMapView('satellite')" id="tab-satellite">
+                            <i class="fas fa-satellite mr-2"></i>Satellite
+                        </div>
+                        <div class="map-tab" onclick="switchMapView('weather')" id="tab-weather">
+                            <i class="fas fa-cloud-rain mr-2"></i>Weather Radar
+                        </div>
+                        <div class="map-tab" onclick="switchMapView('airspace')" id="tab-airspace">
+                            <i class="fas fa-plane-up mr-2"></i>Drone Airspace
+                        </div>
+                        <div class="map-tab" onclick="switchMapView('topo')" id="tab-topo">
+                            <i class="fas fa-mountain mr-2"></i>Topo
+                        </div>
+                        <div class="map-tab" onclick="switchMapView('soils')" id="tab-soils">
+                            <i class="fas fa-mound mr-2"></i>Soils
+                        </div>
+                        <div class="map-tab" onclick="switchMapView('flood')" id="tab-flood">
+                            <i class="fas fa-house-flood-water mr-2"></i>Flood Zones
+                        </div>
+                        <div class="map-tab" onclick="switchMapView('parcels')" id="tab-parcels">
+                            <i class="fas fa-vector-square mr-2"></i>Parcels
+                        </div>
+                        <div class="map-tab" onclick="switchMapView('historical')" id="tab-historical">
+                            <i class="fas fa-clock-rotate-left mr-2"></i>Historical
+                        </div>
+                        <div class="map-tab" onclick="switchMapView('traffic')" id="tab-traffic">
+                            <i class="fas fa-traffic-light mr-2"></i>Traffic
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <select id="projectFilter" onchange="filterByProject()" class="bg-[#0a1628] border border-[#2d4a6f] text-sm text-[#e2e8f0] rounded-lg px-3 py-2 focus:border-[#f59e0b] focus:outline-none">
+                            <option value="all">All Projects</option>
+                            <option value="nsconnector">North-South Connector Road Phase 2</option>
+                            <option value="cbis">CBIS Expansion</option>
+                            <option value="shuttle">Express Shuttle Connector Road</option>
+                            <option value="sewer">Concourse C Sewer Repair</option>
+                        </select>
+                        <button onclick="fitAllProjects()" class="px-4 py-2 bg-[#1e3a5f] text-[#f59e0b] text-sm font-semibold rounded-lg hover:bg-[#2d4a6f] transition">
+                            <i class="fas fa-expand mr-1"></i>Fit All
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Map -->
+                <div class="map-container relative">
+                    <div id="mapSpinner" class="spinner">
+                        <div class="text-center">
+                            <i class="fas fa-circle-notch fa-spin text-3xl text-[#1e3a5f]"></i>
+                            <p class="mt-3 text-sm text-[#64748b] font-bold">Loading map…</p>
+                        </div>
+                    </div>
+                    <div id="mainMap"></div>
+                </div>
+
+                <!-- Project Cards Row -->
+                <div class="grid grid-cols-4 gap-4">
+                    <div class="project-card selected" onclick="focusProject('nsconnector')" id="card-nsconnector">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-3 h-3 rounded-full bg-[#ea580c]"></div>
+                            <span class="text-xs font-bold text-[#f59e0b] uppercase tracking-wider">Active</span>
+                        </div>
+                        <h3 class="text-sm font-bold text-white mb-1">N-S Connector Road Ph 2</h3>
+                        <p class="text-xs text-[#64748b] mb-2">NOAB #1291 · MSY Airport</p>
+                        <div class="flex items-center gap-4 text-xs text-[#94a3b8]">
+                            <span><i class="fas fa-user-helmet-safety mr-1 text-[#f59e0b]"></i>3 inspectors</span>
+                            <span><i class="fas fa-file-lines mr-1 text-[#60a5fa]"></i>12 reports</span>
+                        </div>
+                    </div>
+                    <div class="project-card" onclick="focusProject('cbis')" id="card-cbis">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-3 h-3 rounded-full bg-[#ea580c]"></div>
+                            <span class="text-xs font-bold text-[#f59e0b] uppercase tracking-wider">Active</span>
+                        </div>
+                        <h3 class="text-sm font-bold text-white mb-1">CBIS Expansion</h3>
+                        <p class="text-xs text-[#64748b] mb-2">NOAB #8910-0232 · MSY Airport</p>
+                        <div class="flex items-center gap-4 text-xs text-[#94a3b8]">
+                            <span><i class="fas fa-user-helmet-safety mr-1 text-[#f59e0b]"></i>2 inspectors</span>
+                            <span><i class="fas fa-file-lines mr-1 text-[#60a5fa]"></i>8 reports</span>
+                        </div>
+                    </div>
+                    <div class="project-card" onclick="focusProject('shuttle')" id="card-shuttle">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-3 h-3 rounded-full bg-[#ea580c]"></div>
+                            <span class="text-xs font-bold text-[#f59e0b] uppercase tracking-wider">Active</span>
+                        </div>
+                        <h3 class="text-sm font-bold text-white mb-1">Express Shuttle Connector</h3>
+                        <p class="text-xs text-[#64748b] mb-2">NOAB #1291 · MSY Airport</p>
+                        <div class="flex items-center gap-4 text-xs text-[#94a3b8]">
+                            <span><i class="fas fa-user-helmet-safety mr-1 text-[#f59e0b]"></i>2 inspectors</span>
+                            <span><i class="fas fa-file-lines mr-1 text-[#60a5fa]"></i>6 reports</span>
+                        </div>
+                    </div>
+                    <div class="project-card" onclick="focusProject('sewer')" id="card-sewer">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-3 h-3 rounded-full bg-[#22c55e]"></div>
+                            <span class="text-xs font-bold text-[#22c55e] uppercase tracking-wider">Active</span>
+                        </div>
+                        <h3 class="text-sm font-bold text-white mb-1">Concourse C Sewer Repair</h3>
+                        <p class="text-xs text-[#64748b] mb-2">MSY Airport</p>
+                        <div class="flex items-center gap-4 text-xs text-[#94a3b8]">
+                            <span><i class="fas fa-user-helmet-safety mr-1 text-[#f59e0b]"></i>1 inspector</span>
+                            <span><i class="fas fa-file-lines mr-1 text-[#60a5fa]"></i>1 report</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Inspectors on Map -->
+                <div class="bg-[#0a1628] border border-[#2d4a6f] rounded-xl p-5">
+                    <h3 class="text-sm font-bold text-white mb-4"><i class="fas fa-users mr-2 text-[#f59e0b]"></i>Field Inspectors — Live Positions</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="flex items-center gap-3 bg-[#1e3a5f]/30 rounded-lg p-3">
+                            <div class="relative">
+                                <div class="w-10 h-10 rounded-full bg-[#ea580c] flex items-center justify-center text-white text-sm font-bold">JK</div>
+                                <div class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#22c55e] border-2 border-[#0a1628] rounded-full"></div>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-white">Jackson Koerner</p>
+                                <p class="text-xs text-[#64748b]">N-S Connector · Last ping: 2 min ago</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 bg-[#1e3a5f]/30 rounded-lg p-3">
+                            <div class="relative">
+                                <div class="w-10 h-10 rounded-full bg-[#3b82f6] flex items-center justify-center text-white text-sm font-bold">JC</div>
+                                <div class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#22c55e] border-2 border-[#0a1628] rounded-full"></div>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-white">Justin Cain</p>
+                                <p class="text-xs text-[#64748b]">CBIS Expansion · Last ping: 5 min ago</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 bg-[#1e3a5f]/30 rounded-lg p-3">
+                            <div class="relative">
+                                <div class="w-10 h-10 rounded-full bg-[#8b5cf6] flex items-center justify-center text-white text-sm font-bold">AS</div>
+                                <div class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#f59e0b] border-2 border-[#0a1628] rounded-full"></div>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-white">Andrew Stiebing</p>
+                                <p class="text-xs text-[#64748b]">Express Shuttle · Last ping: 12 min ago</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+    // ============ SIDEBAR ============
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('collapsed');
+        if (map) setTimeout(function() { map.invalidateSize(); }, 350);
+    }
+
+    // ============ PROJECT DATA ============
+    var projects = {
+        nsconnector: {
+            name: 'North-South Connector Road Phase 2',
+            lat: 29.9934, lng: -90.2580,
+            color: '#ea580c',
+            noab: '1291',
+            contractor: 'Hunt, Gibbs, Boh, & Metro (HGBM)',
+            inspectors: ['Jackson Koerner', 'Justin Cain', 'Andrew Stiebing'],
+            status: 'Active — Earthwork & Storm Drain'
+        },
+        cbis: {
+            name: 'CBIS Expansion',
+            lat: 29.9912, lng: -90.2548,
+            color: '#3b82f6',
+            noab: '8910-0232',
+            contractor: 'Hunt, Gibbs, Boh, Metro (HGBM)',
+            inspectors: ['Justin Cain', 'Andrew Stiebing'],
+            status: 'Active — Concrete & Demo'
+        },
+        shuttle: {
+            name: 'Express Shuttle Connector Road',
+            lat: 29.9956, lng: -90.2612,
+            color: '#f59e0b',
+            noab: '1291',
+            contractor: 'Hunt, Gibbs, Boh, & Metro (HGBM)',
+            inspectors: ['Jackson Koerner', 'Andrew Stiebing'],
+            status: 'Active — Storm Drain & Grading'
+        },
+        sewer: {
+            name: 'Concourse C Sewer Repair',
+            lat: 29.9898, lng: -90.2565,
+            color: '#22c55e',
+            noab: '',
+            contractor: 'HGBM',
+            inspectors: ['Justin Cain'],
+            status: 'Active — Utility Repair'
+        }
+    };
+
+    // Inspector mock positions (near their project sites)
+    var inspectors = [
+        { name: 'Jackson Koerner', initials: 'JK', color: '#ea580c', lat: 29.9940, lng: -90.2575, project: 'nsconnector' },
+        { name: 'Justin Cain', initials: 'JC', color: '#3b82f6', lat: 29.9916, lng: -90.2542, project: 'cbis' },
+        { name: 'Andrew Stiebing', initials: 'AS', color: '#8b5cf6', lat: 29.9960, lng: -90.2618, project: 'shuttle' }
+    ];
+
+    // ============ MAP SETUP ============
+    var map = null;
+    var currentView = 'satellite';
+    var tileLayer = null;
+    var iframeOverlay = null;
+    var projectMarkers = {};
+    var inspectorMarkers = [];
+    var projectBounds = null;
+
+    // Tile layers
+    var tileLayers = {
+        satellite: {
+            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            attribution: '&copy; Esri',
+            maxZoom: 19
+        },
+        street: {
+            url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            attribution: '&copy; OpenStreetMap',
+            maxZoom: 19
+        }
+    };
+
+    function initMap() {
+        map = L.map('mainMap', {
+            center: [29.9930, -90.2580],
+            zoom: 15,
+            zoomControl: true
+        });
+
+        // Default satellite layer
+        tileLayer = L.tileLayer(tileLayers.satellite.url, {
+            attribution: tileLayers.satellite.attribution,
+            maxZoom: tileLayers.satellite.maxZoom
+        }).addTo(map);
+
+        tileLayer.on('load', function() {
+            var spinner = document.getElementById('mapSpinner');
+            if (spinner) spinner.style.display = 'none';
+        });
+
+        // Add project markers
+        addProjectMarkers();
+        addInspectorMarkers();
+
+        // Fit to all projects
+        fitAllProjects();
+    }
+
+    function createProjectIcon(color, label) {
+        return L.divIcon({
+            className: '',
+            html: '<div style="position:relative;">' +
+                '<div style="width:36px;height:36px;background:' + color + ';border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;">' +
+                    '<i class="fas fa-hard-hat" style="color:white;font-size:14px;"></i>' +
+                '</div>' +
+                '<div style="position:absolute;top:38px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(10,22,40,0.9);color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;border:1px solid ' + color + ';">' + label + '</div>' +
+            '</div>',
+            iconSize: [36, 56],
+            iconAnchor: [18, 18],
+            popupAnchor: [0, -20]
+        });
+    }
+
+    function createInspectorIcon(initials, color) {
+        return L.divIcon({
+            className: '',
+            html: '<div style="position:relative;">' +
+                '<div style="width:28px;height:28px;background:' + color + ';border:2px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;">' + initials + '</div>' +
+                '<div style="position:absolute;bottom:-2px;right:-2px;width:10px;height:10px;background:#22c55e;border:2px solid white;border-radius:50%;"></div>' +
+            '</div>',
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
+        });
+    }
+
+    function addProjectMarkers() {
+        var boundsArr = [];
+        for (var key in projects) {
+            var p = projects[key];
+            var popupHtml =
+                '<div style="min-width:220px;">' +
+                    '<div style="font-weight:700;font-size:14px;color:#f59e0b;margin-bottom:6px;">' + p.name + '</div>' +
+                    (p.noab ? '<div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">NOAB #' + p.noab + '</div>' : '') +
+                    '<div style="font-size:12px;color:#e2e8f0;margin-bottom:4px;"><i class="fas fa-building" style="color:#60a5fa;margin-right:6px;"></i>' + p.contractor + '</div>' +
+                    '<div style="font-size:12px;color:#e2e8f0;margin-bottom:6px;"><i class="fas fa-signal" style="color:#22c55e;margin-right:6px;"></i>' + p.status + '</div>' +
+                    '<div style="font-size:11px;color:#94a3b8;border-top:1px solid #1e3a5f;padding-top:6px;">' +
+                        '<i class="fas fa-users" style="color:#f59e0b;margin-right:4px;"></i>' + p.inspectors.join(', ') +
+                    '</div>' +
+                '</div>';
+
+            var marker = L.marker([p.lat, p.lng], { icon: createProjectIcon(p.color, p.name.split(' ').slice(0,3).join(' ')) })
+                .bindPopup(popupHtml, { maxWidth: 300 })
+                .addTo(map);
+
+            projectMarkers[key] = marker;
+            boundsArr.push([p.lat, p.lng]);
+        }
+        projectBounds = L.latLngBounds(boundsArr);
+    }
+
+    function addInspectorMarkers() {
+        for (var i = 0; i < inspectors.length; i++) {
+            var insp = inspectors[i];
+            var marker = L.marker([insp.lat, insp.lng], { icon: createInspectorIcon(insp.initials, insp.color) })
+                .bindPopup('<div style="font-weight:600;color:#e2e8f0;">' + insp.name + '</div><div style="font-size:11px;color:#94a3b8;">RPR Inspector · Online</div>')
+                .addTo(map);
+            inspectorMarkers.push(marker);
+        }
+    }
+
+    // ============ VIEW SWITCHING ============
+    var airspaceTimeout = null;
+    var airspaceLoaded = false;
+    var trafficTimeout = null;
+    var trafficLoaded = false;
+    var waybackConfig = null;
+
+    function switchMapView(type) {
+        // Update tabs
+        document.querySelectorAll('.map-tab').forEach(function(t) { t.classList.remove('active'); });
+        document.getElementById('tab-' + type).classList.add('active');
+        // Scroll active tab into view
+        document.getElementById('tab-' + type).scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+
+        var mapDiv = document.getElementById('mainMap');
+        var lat = 29.9930, lng = -90.2580;
+
+        // Clear timeouts
+        if (airspaceTimeout) { clearTimeout(airspaceTimeout); airspaceTimeout = null; }
+        if (trafficTimeout) { clearTimeout(trafficTimeout); trafficTimeout = null; }
+        airspaceLoaded = false;
+        trafficLoaded = false;
+
+        // Destroy existing Leaflet map for iframe views
+        function destroyMap() { if (map) { map.remove(); map = null; tileLayer = null; } }
+
+        if (type === 'weather') {
+            destroyMap();
+            mapDiv.innerHTML = '<iframe src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=%C2%B0F&metricWind=mph&zoom=13&overlay=radar&product=radar&level=surface&lat=' + lat + '&lon=' + lng + '" style="width:100%;height:100%;border:none;" allowfullscreen></iframe>';
+        } else if (type === 'airspace') {
+            destroyMap();
+            mapDiv.innerHTML =
+                '<div id="airspaceIframeWrap" style="width:100%;height:100%;overflow:hidden;">' +
+                    '<iframe id="airspaceIframe" src="https://faa.maps.arcgis.com/apps/webappviewer/index.html?id=9c2e4406710048e19806ebf6a06754ad&center=' + lng + ',' + lat + '&level=12" ' +
+                        'style="width:100%;height:100%;border:none;filter:invert(1) hue-rotate(180deg) brightness(0.9) contrast(1.1);" ' +
+                        'allowfullscreen onload="onAirspaceLoad()"></iframe>' +
+                '</div>';
+            airspaceTimeout = setTimeout(function() {
+                if (currentView === 'airspace' && !airspaceLoaded) showAirspaceFallback();
+            }, 15000);
+        } else if (type === 'traffic') {
+            destroyMap();
+            mapDiv.innerHTML = '<iframe src="https://www.google.com/maps/@' + lat + ',' + lng + ',14z/data=!5m1!1e1" ' +
+                'style="width:100%;height:100%;border:none;filter:invert(1) hue-rotate(180deg) brightness(0.9) contrast(1.1);" ' +
+                'allowfullscreen onload="onTrafficLoad()"></iframe>';
+            trafficTimeout = setTimeout(function() {
+                if (currentView === 'traffic' && !trafficLoaded) showTrafficFallback();
+            }, 10000);
+        } else {
+            // All Leaflet-based maps
+            if (!map) {
+                mapDiv.innerHTML = '';
+                initMap();
+            }
+            // Remove extra overlays
+            if (map._extraLayers) {
+                map._extraLayers.forEach(function(l) { map.removeLayer(l); });
+                map._extraLayers = [];
+            }
+            // Remove wayback date row if present
+            var existingDateRow = document.getElementById('waybackDateRow');
+            if (existingDateRow) existingDateRow.remove();
+            // Remove fallback buttons
+            var fb = map.getContainer().querySelector('.map-fallback-btn');
+            if (fb) fb.remove();
+
+            if (tileLayer) map.removeLayer(tileLayer);
+            map._extraLayers = [];
+
+            if (type === 'satellite') {
+                tileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri', maxZoom: 19 }).addTo(map);
+            } else if (type === 'topo') {
+                tileLayer = L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; USGS', maxZoom: 16 }).addTo(map);
+            } else if (type === 'soils') {
+                // Use light base map so soil polygons are visible (not satellite)
+                tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO', maxZoom: 19 }).addTo(map);
+                var soilLayer = L.tileLayer.wms('https://SDMDataAccess.sc.egov.usda.gov/Spatial/SDM.wms', {
+                    layers: 'mapunitpoly', format: 'image/png', transparent: true, attribution: '&copy; USDA NRCS', opacity: 0.7
+                }).addTo(map);
+                map._extraLayers.push(soilLayer);
+            } else if (type === 'flood') {
+                tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO', maxZoom: 19 }).addTo(map);
+                var femaLayer = L.tileLayer('', { attribution: '&copy; FEMA', opacity: 0.55, maxZoom: 19 });
+                femaLayer.getTileUrl = function(coords) {
+                    var tileSize = 256;
+                    var nw = map.unproject(L.point(coords.x * tileSize, coords.y * tileSize), coords.z);
+                    var se = map.unproject(L.point((coords.x + 1) * tileSize, (coords.y + 1) * tileSize), coords.z);
+                    var bbox = nw.lng + ',' + se.lat + ',' + se.lng + ',' + nw.lat;
+                    return 'https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/export?bbox=' + bbox +
+                        '&bboxSR=4326&imageSR=4326&size=256,256&format=png32&transparent=true&f=image';
+                };
+                femaLayer.addTo(map);
+                map._extraLayers.push(femaLayer);
+            } else if (type === 'parcels') {
+                tileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri', maxZoom: 19 }).addTo(map);
+                map.setZoom(17);
+            } else if (type === 'historical') {
+                tileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri', maxZoom: 19 }).addTo(map);
+                // Add wayback date selector
+                var dateRow = document.createElement('div');
+                dateRow.id = 'waybackDateRow';
+                dateRow.style.cssText = 'position:absolute;top:0;left:0;right:0;z-index:1000;background:rgba(10,22,40,0.85);padding:8px 12px;overflow-x:auto;white-space:nowrap;-ms-overflow-style:none;scrollbar-width:none;';
+                map.getContainer().appendChild(dateRow);
+                loadWaybackDates(dateRow);
+            }
+            map.invalidateSize();
+        }
+        currentView = type;
+    }
+
+    // Wayback historical dates
+    function loadWaybackDates(dateRow) {
+        if (waybackConfig) {
+            renderWaybackDates(dateRow, waybackConfig);
+            return;
+        }
+        dateRow.innerHTML = '<span style="color:#94a3b8;font-size:12px;">Loading historical dates…</span>';
+        fetch('https://s3-us-west-2.amazonaws.com/world-imagery-wayback/config/config.json')
+            .then(function(r) { return r.json(); })
+            .then(function(config) {
+                waybackConfig = config;
+                if (currentView === 'historical') renderWaybackDates(dateRow, config);
+            })
+            .catch(function() {
+                dateRow.innerHTML = '<span style="color:#fb923c;font-size:12px;">Could not load historical dates</span>';
+            });
+    }
+
+    function renderWaybackDates(dateRow, config) {
+        dateRow.innerHTML = '';
+        var seen = {}, releases = [];
+        for (var i = 0; i < config.length; i++) {
+            var year = new Date(config[i].itemReleasedTime).getFullYear();
+            if (!seen[year]) {
+                seen[year] = true;
+                releases.push({ year: year, url: config[i].itemURL + '/tile/{z}/{y}/{x}' });
+            }
+        }
+        releases.sort(function(a, b) { return b.year - a.year; });
+
+        var pillStyle = 'display:inline-block;padding:4px 12px;border-radius:9999px;font-size:12px;font-weight:600;border:none;cursor:pointer;margin-right:6px;';
+        var currentPill = document.createElement('button');
+        currentPill.textContent = 'Current';
+        currentPill.style.cssText = pillStyle + 'background:white;color:#0a1628;font-weight:700;';
+        currentPill.onclick = function() {
+            setActivePill(dateRow, currentPill);
+            tileLayer.setUrl('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+        };
+        dateRow.appendChild(currentPill);
+
+        releases.forEach(function(rel) {
+            var pill = document.createElement('button');
+            pill.textContent = rel.year;
+            pill.style.cssText = pillStyle + 'background:rgba(100,116,139,0.5);color:#cbd5e1;';
+            pill.onclick = function() {
+                setActivePill(dateRow, pill);
+                tileLayer.setUrl(rel.url);
+            };
+            dateRow.appendChild(pill);
+        });
+    }
+
+    function setActivePill(container, active) {
+        container.querySelectorAll('button').forEach(function(b) {
+            b.style.background = 'rgba(100,116,139,0.5)'; b.style.color = '#cbd5e1'; b.style.fontWeight = '600';
+        });
+        active.style.background = 'white'; active.style.color = '#0a1628'; active.style.fontWeight = '700';
+    }
+
+    // Iframe load handlers
+    window.onAirspaceLoad = function() {
+        airspaceLoaded = true;
+        if (airspaceTimeout) { clearTimeout(airspaceTimeout); airspaceTimeout = null; }
+    };
+    window.onTrafficLoad = function() {
+        trafficLoaded = true;
+        if (trafficTimeout) { clearTimeout(trafficTimeout); trafficTimeout = null; }
+    };
+
+    function showAirspaceFallback() {
+        var mapDiv = document.getElementById('mainMap');
+        if (!mapDiv || currentView !== 'airspace') return;
+        mapDiv.innerHTML =
+            '<div style="width:100%;height:100%;background:#0f172a;display:flex;align-items:center;justify-content:center;">' +
+                '<div style="text-align:center;padding:32px;max-width:340px;">' +
+                    '<i class="fas fa-plane-circle-exclamation" style="font-size:48px;color:#64748b;margin-bottom:16px;display:block;"></i>' +
+                    '<p style="color:white;font-size:18px;font-weight:700;margin-bottom:8px;">FAA Airspace Map Unavailable</p>' +
+                    '<p style="color:#94a3b8;font-size:13px;margin-bottom:24px;">The embedded FAA map could not be loaded. Use one of these services to check airspace restrictions.</p>' +
+                    '<button onclick="window.open(\'https://opensky.wing.com\',\'_blank\')" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:#1e3a5f;color:white;font-weight:600;border-radius:0.5rem;padding:12px 20px;border:none;font-size:15px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);margin-bottom:12px;">' +
+                        '<i class="fas fa-up-right-from-square"></i> Check Airspace in OpenSky</button>' +
+                    '<button onclick="window.open(\'https://app.aloft.ai\',\'_blank\')" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:transparent;color:#94a3b8;font-weight:600;border-radius:0.5rem;padding:12px 20px;border:1px solid #334155;font-size:15px;cursor:pointer;">' +
+                        '<i class="fas fa-up-right-from-square"></i> Check Airspace in Aloft</button>' +
+                '</div>' +
+            '</div>';
+    }
+
+    function showTrafficFallback() {
+        var mapDiv = document.getElementById('mainMap');
+        if (!mapDiv || currentView !== 'traffic') return;
+        mapDiv.innerHTML =
+            '<div style="width:100%;height:100%;background:#0f172a;display:flex;align-items:center;justify-content:center;">' +
+                '<div style="text-align:center;padding:32px;max-width:320px;">' +
+                    '<i class="fas fa-traffic-light" style="font-size:48px;color:#64748b;margin-bottom:16px;display:block;"></i>' +
+                    '<p style="color:white;font-size:18px;font-weight:700;margin-bottom:8px;">Traffic Map Unavailable</p>' +
+                    '<p style="color:#94a3b8;font-size:13px;margin-bottom:24px;">Open Google Maps traffic view in your browser instead.</p>' +
+                    '<button onclick="window.open(\'https://www.google.com/maps/@29.9930,-90.2580,14z/data=!5m1!1e1\',\'_blank\')" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:#1e3a5f;color:white;font-weight:600;border-radius:0.5rem;padding:12px 20px;border:none;font-size:15px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);">' +
+                        '<i class="fas fa-up-right-from-square"></i> View Traffic in Google Maps</button>' +
+                '</div>' +
+            '</div>';
+    }
+
+    // ============ PROJECT INTERACTION ============
+    function focusProject(key) {
+        // Highlight card
+        document.querySelectorAll('.project-card').forEach(function(c) { c.classList.remove('selected'); });
+        document.getElementById('card-' + key).classList.add('selected');
+
+        // If on an iframe view, switch back to satellite
+        if (!map) {
+            switchMapView('satellite');
+            setTimeout(function() {
+                var p = projects[key];
+                map.setView([p.lat, p.lng], 17);
+                projectMarkers[key].openPopup();
+            }, 500);
+        } else {
+            var p = projects[key];
+            map.setView([p.lat, p.lng], 17);
+            projectMarkers[key].openPopup();
+        }
+    }
+
+    function fitAllProjects() {
+        if (!map) {
+            switchMapView('satellite');
+            setTimeout(function() {
+                if (projectBounds && map) map.fitBounds(projectBounds.pad(0.3));
+            }, 500);
+        } else if (projectBounds) {
+            map.fitBounds(projectBounds.pad(0.3));
+        }
+        // Deselect cards
+        document.querySelectorAll('.project-card').forEach(function(c) { c.classList.remove('selected'); });
+    }
+
+    function filterByProject() {
+        var val = document.getElementById('projectFilter').value;
+        if (val === 'all') {
+            fitAllProjects();
+        } else {
+            focusProject(val);
+        }
+    }
+
+    // ============ INIT ============
+    document.addEventListener('DOMContentLoaded', function() {
+        initMap();
+    });
+    </script>
+</body>
+</html>

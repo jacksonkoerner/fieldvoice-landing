@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Daily Report - FieldVoice Pro</title>
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
+    <meta name="theme-color" content="#0a1628">
+
+    <!-- iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FieldVoice">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./js/config.js"></script>
+    <script src="./js/storage-keys.js"></script>
+    <script src="./js/indexeddb-utils.js"></script>
+    <script src="./js/data-layer.js"></script>
+    <script src="./js/supabase-utils.js"></script>
+    <script src="./js/ui-utils.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dot-navy': '#0a1628',
+                        'dot-blue': '#1e3a5f',
+                        'dot-slate': '#334155',
+                        'dot-orange': '#ea580c',
+                        'dot-yellow': '#f59e0b',
+                        'safety-green': '#16a34a',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+        .header-stripe {
+            background: repeating-linear-gradient(-45deg, #f59e0b, #f59e0b 10px, #0a1628 10px, #0a1628 20px);
+            height: 4px;
+        }
+        /* Auto-expanding textareas */
+        .auto-expand {
+            min-height: 72px;
+            max-height: 400px;
+            overflow-y: hidden;
+            resize: none;
+            transition: height 0.1s ease-out;
+        }
+        .auto-expand.scrollable {
+            overflow-y: auto;
+        }
+        /* Editable field styles */
+        .editable-field {
+            background: white;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+        }
+        .editable-field:hover {
+            border-color: #94a3b8;
+        }
+        .editable-field:focus {
+            outline: none;
+            border-color: #1e3a5f;
+            box-shadow: 0 0 0 2px rgba(30, 58, 95, 0.1);
+        }
+        .editable-field.user-edited {
+            background: #fef9c3;
+            border-color: #f59e0b;
+        }
+        /* Section headers */
+        .section-header {
+            background: #0a1628;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            letter-spacing: 0.05em;
+        }
+        /* Table styles */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+        }
+        .data-table th {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 0.5rem;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            color: #64748b;
+        }
+        .data-table td {
+            border: 1px solid #e2e8f0;
+            padding: 0.25rem;
+        }
+        .data-table input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            padding: 0.25rem;
+            font-size: 0.75rem;
+        }
+        .data-table input:focus {
+            outline: none;
+            background: #fef9c3;
+        }
+        .data-table .totals-row {
+            background: #f8fafc;
+            font-weight: bold;
+        }
+        /* Contractor card */
+        .contractor-card {
+            border: 2px solid #e2e8f0;
+            transition: border-color 0.2s ease;
+        }
+        .contractor-card.has-content {
+            border-color: #16a34a;
+        }
+        .contractor-card.no-work {
+            border-color: #94a3b8;
+            background: #f8fafc;
+        }
+        /* Photo cards - single column layout for DOT compliance */
+        .photo-card {
+            border: 2px solid #e2e8f0;
+            margin-bottom: 1.5rem;
+            background: white;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        .photo-card-header {
+            background: #f1f5f9;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .photo-card-image {
+            position: relative;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100px;
+        }
+        .photo-card-image img {
+            display: block;
+            max-width: 100%;
+            max-height: 600px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        /* Portrait photos - centered with max height */
+        .photo-card-image.portrait img {
+            max-height: 500px;
+        }
+        /* Landscape photos - full width */
+        .photo-card-image.landscape img {
+            width: 100%;
+            max-height: 450px;
+            object-fit: contain;
+        }
+        .photo-card-image .photo-loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+        }
+        .photo-card-image .photo-error {
+            padding: 2rem;
+            text-align: center;
+            color: #94a3b8;
+        }
+        .photo-card-footer {
+            padding: 1rem;
+            border-top: 1px solid #e2e8f0;
+            background: #fafafa;
+        }
+        .photo-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+        .photo-card-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .photo-card-caption {
+            width: 100%;
+            min-height: 60px;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            background: white;
+            font-size: 0.875rem;
+            resize: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .photo-card-caption:focus {
+            outline: none;
+            border-color: #1e3a5f;
+            box-shadow: 0 0 0 2px rgba(30, 58, 95, 0.1);
+        }
+        .photo-card-caption::placeholder {
+            color: #94a3b8;
+            font-style: italic;
+        }
+        /* Print styles for photos */
+        @media print {
+            .photo-card {
+                page-break-inside: avoid;
+                break-inside: avoid;
+                margin-bottom: 1rem;
+            }
+            .photo-card-image img {
+                max-height: 400px;
+            }
+        }
+        /* Save indicator */
+        .save-indicator {
+            position: fixed;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #16a34a;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+        }
+        .save-indicator.visible {
+            opacity: 1;
+        }
+        /* Hide scrollbar but allow scrolling */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Number input styling */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            opacity: 1;
+        }
+        /* Debug Panel Styles */
+        .debug-panel {
+            background: #f8fafc;
+            border: 2px solid #94a3b8;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+        }
+        .debug-panel-header {
+            background: #64748b;
+            color: white;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-radius: 0.375rem 0.375rem 0 0;
+        }
+        .debug-panel-header:hover {
+            background: #475569;
+        }
+        .debug-panel.collapsed .debug-panel-header {
+            border-radius: 0.375rem;
+        }
+        .debug-panel-content {
+            padding: 1rem;
+            display: none;
+        }
+        .debug-panel.expanded .debug-panel-content {
+            display: block;
+        }
+        .debug-section {
+            margin-bottom: 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            background: white;
+        }
+        .debug-section-header {
+            background: #f1f5f9;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .debug-section-header:hover {
+            background: #e2e8f0;
+        }
+        .debug-section-content {
+            display: none;
+            padding: 0.75rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        .debug-section.expanded .debug-section-content {
+            display: block;
+        }
+        .debug-json {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.7rem;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .debug-issue {
+            padding: 0.5rem 0.75rem;
+            border-left: 3px solid;
+            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+            background: #fef9c3;
+        }
+        .debug-issue.schema { border-color: #f59e0b; }
+        .debug-issue.empty { border-color: #3b82f6; }
+        .debug-issue.type { border-color: #ef4444; }
+        .debug-issue.contractor { border-color: #8b5cf6; }
+        .debug-issue-type {
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            margin-bottom: 0.25rem;
+        }
+        .debug-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .debug-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .debug-btn-json {
+            background: #1e3a5f;
+            color: white;
+        }
+        .debug-btn-json:hover {
+            background: #0f2942;
+        }
+        .debug-btn-md {
+            background: #64748b;
+            color: white;
+        }
+        .debug-btn-md:hover {
+            background: #475569;
+        }
+        /* Debug Banner */
+        .debug-banner {
+            background: #fef3c7;
+            border-bottom: 1px solid #f59e0b;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+        .debug-banner:hover {
+            background: #fde68a;
+        }
+        .debug-banner-text {
+            color: #92400e;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .debug-banner-dismiss {
+            color: #92400e;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.25rem;
+            font-size: 1rem;
+        }
+        .debug-banner-dismiss:hover {
+            color: #78350f;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+    <div class="header-stripe"></div>
+
+    <!-- STICKY HEADER -->
+    <header class="sticky top-0 z-50 bg-dot-navy text-white shadow-lg">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="w-10 h-10 flex items-center justify-center border border-slate-600 hover:bg-slate-800 transition-colors" title="Home">
+                    <i class="fas fa-home text-slate-400"></i>
+                </a>
+                <div>
+                    <h1 class="font-bold text-sm uppercase tracking-wide">Daily Report</h1>
+                    <p id="headerDate" class="text-xs text-slate-400"></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="saveReport()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold uppercase transition-colors flex items-center gap-1">
+                    <i class="fas fa-save"></i>
+                    <span class="hidden sm:inline">Save</span>
+                </button>
+                <button onclick="exportPDF()" class="px-3 py-2 bg-dot-blue hover:bg-blue-700 text-white text-xs font-bold uppercase transition-colors flex items-center gap-1">
+                    <i class="fas fa-file-pdf"></i>
+                    <span class="hidden sm:inline">PDF</span>
+                </button>
+                <button onclick="goToFinalReview()" class="px-3 py-2 bg-safety-green hover:bg-green-700 text-white text-xs font-bold uppercase transition-colors flex items-center gap-1">
+                    <i class="fas fa-check-circle"></i>
+                    <span class="hidden sm:inline">Final Review</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- TAB TOGGLE -->
+    <div class="max-w-4xl mx-auto bg-dot-navy border-b border-slate-700">
+        <div class="flex">
+            <button id="tabFormView" onclick="switchTab('form')" class="flex-1 px-4 py-3 text-sm font-bold uppercase tracking-wide border-b-2 border-dot-orange text-white transition-colors">
+                <i class="fas fa-edit mr-2"></i>Form View
+            </button>
+            <button id="tabOriginalNotes" onclick="switchTab('notes')" class="flex-1 px-4 py-3 text-sm font-bold uppercase tracking-wide border-b-2 border-transparent text-slate-400 hover:text-white transition-colors">
+                <i class="fas fa-microphone mr-2"></i>Original Notes
+            </button>
+        </div>
+    </div>
+
+    <!-- PENDING REFINE BANNER -->
+    <div id="pendingRefineBanner" class="hidden max-w-4xl mx-auto">
+        <div class="bg-yellow-500/20 border-b border-yellow-500 p-3 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-yellow-700">
+                <i class="fas fa-wifi-slash"></i>
+                <span class="text-sm font-medium">AI processing pending - showing raw notes. Will update when online.</span>
+            </div>
+            <button id="retryRefine" onclick="retryRefineProcessing()" class="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-bold uppercase transition-colors">
+                Retry Now
+            </button>
+        </div>
+    </div>
+
+    <!-- DEBUG ISSUE BANNER -->
+    <div id="debugIssueBanner" class="hidden max-w-4xl mx-auto">
+        <div class="debug-banner" onclick="scrollToDebugPanel()">
+            <span class="debug-banner-text">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Field mapping issues detected — see Debug Tool below
+            </span>
+            <button class="debug-banner-dismiss" onclick="dismissDebugBanner(event)" title="Dismiss">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="max-w-4xl mx-auto pb-24">
+
+        <!-- ORIGINAL NOTES VIEW (hidden by default) -->
+        <div id="originalNotesView" class="hidden p-4">
+            <div class="bg-dot-blue/10 border border-dot-blue/30 rounded-lg p-4 mb-6">
+                <h3 class="text-lg font-semibold text-slate-800 mb-2 flex items-center gap-2">
+                    <i class="fas fa-microphone text-dot-orange"></i>
+                    Original Field Notes
+                </h3>
+                <p class="text-sm text-slate-500 mb-4">
+                    Capture Mode: <span id="captureModeBadge" class="bg-dot-navy text-white px-2 py-1 rounded text-xs font-bold uppercase">Guided</span>
+                </p>
+
+                <!-- If Minimal Mode -->
+                <div id="minimalNotesSection" class="hidden">
+                    <h4 class="text-md font-medium text-slate-700 mb-2">Field Notes</h4>
+                    <div class="bg-white border border-slate-200 p-3 rounded text-slate-700 whitespace-pre-wrap" id="originalFreeformNotes">
+                        No notes captured
+                    </div>
+                </div>
+
+                <!-- If Guided Mode -->
+                <div id="guidedNotesSection" class="space-y-4">
+
+                    <!-- WORK SUMMARY - Per Contractor -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-2">Work Summary</h4>
+                        <div id="originalWorkByContractor" class="space-y-3">
+                            <p class="text-slate-400 italic">None</p>
+                        </div>
+                    </div>
+
+                    <!-- PERSONNEL -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-2">Personnel</h4>
+                        <div id="originalPersonnelSection">
+                            <p class="text-slate-400 italic">None</p>
+                        </div>
+                    </div>
+
+                    <!-- EQUIPMENT -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-2">Equipment</h4>
+                        <div id="originalEquipmentSection">
+                            <p class="text-slate-400 italic">None</p>
+                        </div>
+                    </div>
+
+                    <!-- ISSUES & DELAYS -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-2">Issues & Delays</h4>
+                        <div id="originalIssues">
+                            <p class="text-slate-400 italic">None</p>
+                        </div>
+                    </div>
+
+                    <!-- QA/QC -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-2">QA/QC Testing</h4>
+                        <div id="originalQaqc">
+                            <p class="text-slate-400 italic">None</p>
+                        </div>
+                    </div>
+
+                    <!-- COMMUNICATIONS -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-2">Communications</h4>
+                        <div id="originalCommunications">
+                            <p class="text-slate-400 italic">None</p>
+                        </div>
+                    </div>
+
+                    <!-- SAFETY -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-2">Safety</h4>
+                        <div id="originalSafety">
+                            <p class="text-slate-400 italic">None</p>
+                        </div>
+                    </div>
+
+                    <!-- VISITORS/DELIVERIES -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-slate-300 uppercase tracking-wide mb-2">Visitors & Deliveries</h4>
+                        <div id="originalVisitors">
+                            <p class="text-slate-400 italic">None</p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Weather (both modes) -->
+                <div class="mt-4">
+                    <h4 class="text-md font-medium text-slate-700 mb-2">Weather</h4>
+                    <div class="bg-white border border-slate-200 p-3 rounded text-slate-700" id="originalWeather">
+                        N/A
+                    </div>
+                </div>
+            </div>
+
+            <!-- Photos in original notes view -->
+            <div class="bg-dot-blue/10 border border-dot-blue/30 rounded-lg p-4">
+                <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <i class="fas fa-camera text-dot-orange"></i>
+                    Captured Photos
+                </h3>
+                <div id="originalPhotosGrid" class="grid grid-cols-2 gap-4">
+                    <p class="text-slate-500 col-span-2 text-center py-4">No photos captured</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- FORM VIEW CONTENT -->
+        <div id="formViewContent">
+
+        <!-- 1. PROJECT OVERVIEW SECTION -->
+        <section class="bg-white border-b-4 border-slate-200 mb-4">
+            <div class="section-header flex items-center gap-2">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Project Overview</span>
+            </div>
+            <div class="p-4 space-y-4">
+                <!-- Project Logo (display only) -->
+                <div id="projectLogoContainer" class="hidden mb-4">
+                    <img id="projectLogo" src="" alt="Project Logo" class="max-h-[60px] object-contain">
+                </div>
+
+                <!-- DOT RPR Daily Report Style 2-Column Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Left Column -->
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Project Name</label>
+                            <input type="text" id="projectName" class="editable-field w-full px-3 py-2 text-sm" placeholder="Enter project name">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">NOAB Project No.</label>
+                            <input type="text" id="noabProjectNo" class="editable-field w-full px-3 py-2 text-sm" placeholder="e.g., 1291">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">CNO Solicitation No.</label>
+                            <input type="text" id="cnoSolicitationNo" class="editable-field w-full px-3 py-2 text-sm" placeholder="N/A" value="N/A">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Notice to Proceed</label>
+                            <input type="date" id="noticeToProceed" class="editable-field w-full px-3 py-2 text-sm bg-slate-50" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Contract Duration</label>
+                            <input type="text" id="contractDuration" class="editable-field w-full px-3 py-2 text-sm bg-slate-50" placeholder="-- days" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Expected Completion</label>
+                            <input type="date" id="expectedCompletion" class="editable-field w-full px-3 py-2 text-sm bg-slate-50" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Contract Day #</label>
+                            <input type="text" id="contractDay" class="editable-field w-full px-3 py-2 text-sm" placeholder="e.g., Day 19 of 467">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Weather Days</label>
+                            <input type="number" id="weatherDaysCount" class="editable-field w-full px-3 py-2 text-sm" placeholder="0" min="0">
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Date</label>
+                            <input type="date" id="reportDate" class="editable-field w-full px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Location</label>
+                            <input type="text" id="projectLocation" class="editable-field w-full px-3 py-2 text-sm" placeholder="Enter location">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Engineer</label>
+                            <input type="text" id="engineer" class="editable-field w-full px-3 py-2 text-sm" placeholder="Enter engineer firm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Contractor</label>
+                            <input type="text" id="contractor" class="editable-field w-full px-3 py-2 text-sm" placeholder="Enter prime contractor">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Start Time</label>
+                            <input type="time" id="startTime" class="editable-field w-full px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">End Time</label>
+                            <input type="time" id="endTime" class="editable-field w-full px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Shift Duration</label>
+                            <input type="text" id="shiftDuration" class="editable-field w-full px-3 py-2 text-sm bg-slate-50" placeholder="-- hours" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Completed By</label>
+                            <input type="text" id="completedBy" class="editable-field w-full px-3 py-2 text-sm" placeholder="Your name">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weather Block -->
+                <div class="bg-slate-50 border border-slate-200 p-4 rounded">
+                    <h3 class="text-xs font-bold text-slate-600 uppercase mb-3 flex items-center gap-2">
+                        <i class="fas fa-cloud-sun text-dot-blue"></i>
+                        Weather Conditions
+                    </h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">High Temp</label>
+                            <input type="text" id="weatherHigh" class="editable-field w-full px-2 py-1.5 text-sm" placeholder="--°F">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Low Temp</label>
+                            <input type="text" id="weatherLow" class="editable-field w-full px-2 py-1.5 text-sm" placeholder="--°F">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Precipitation</label>
+                            <input type="text" id="weatherPrecip" class="editable-field w-full px-2 py-1.5 text-sm" placeholder="0.00&quot;">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Condition</label>
+                            <input type="text" id="weatherCondition" class="editable-field w-full px-2 py-1.5 text-sm" placeholder="e.g., Sunny">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Job Site</label>
+                            <select id="weatherJobSite" class="editable-field w-full px-2 py-1.5 text-sm">
+                                <option value="">Select...</option>
+                                <option value="Dry">Dry</option>
+                                <option value="Wet">Wet</option>
+                                <option value="Muddy">Muddy</option>
+                                <option value="Frozen">Frozen</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2 sm:col-span-3">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Adverse Conditions</label>
+                            <input type="text" id="weatherAdverse" class="editable-field w-full px-2 py-1.5 text-sm" placeholder="None / Describe if any">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. DAILY WORK SUMMARY SECTION -->
+        <section class="bg-white border-b-4 border-slate-200 mb-4">
+            <div class="section-header flex items-center gap-2">
+                <i class="fas fa-hard-hat"></i>
+                <span>Daily Work Summary</span>
+            </div>
+            <div id="workSummaryContainer" class="p-4 space-y-4">
+                <!-- Contractor cards will be populated here -->
+                <div class="text-center text-slate-400 py-8">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                    <p class="text-sm">Loading contractors...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. PERSONNEL/OPERATIONS SECTION -->
+        <section class="bg-white border-b-4 border-slate-200 mb-4">
+            <div class="section-header flex items-center gap-2">
+                <i class="fas fa-users"></i>
+                <span>Personnel / Operations</span>
+            </div>
+            <div class="p-4 overflow-x-auto">
+                <table class="data-table" id="personnelTable">
+                    <thead>
+                        <tr>
+                            <th class="min-w-[120px]">Contractor</th>
+                            <th class="min-w-[80px]">Trade</th>
+                            <th class="w-12">Super</th>
+                            <th class="w-12">Foreman</th>
+                            <th class="w-12">Operators</th>
+                            <th class="w-12">Laborers</th>
+                            <th class="w-12">Surveyors</th>
+                            <th class="w-12">Others</th>
+                            <th class="w-16">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="personnelTableBody">
+                        <!-- Rows will be populated here -->
+                    </tbody>
+                    <tfoot>
+                        <tr class="totals-row">
+                            <td colspan="2" class="text-right font-bold px-2">TOTALS:</td>
+                            <td id="totalSuper" class="text-center">0</td>
+                            <td id="totalForeman" class="text-center">0</td>
+                            <td id="totalOperators" class="text-center">0</td>
+                            <td id="totalLaborers" class="text-center">0</td>
+                            <td id="totalSurveyors" class="text-center">0</td>
+                            <td id="totalOthers" class="text-center">0</td>
+                            <td id="totalAll" class="text-center font-bold">0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <!-- 4. EQUIPMENT STATUS SECTION -->
+        <section class="bg-white border-b-4 border-slate-200 mb-4">
+            <div class="section-header flex items-center gap-2">
+                <i class="fas fa-truck"></i>
+                <span>Equipment Status</span>
+            </div>
+            <div class="p-4 overflow-x-auto">
+                <table class="data-table" id="equipmentTable">
+                    <thead>
+                        <tr>
+                            <th class="min-w-[120px]">Contractor</th>
+                            <th class="min-w-[200px]">Equipment Type / Model</th>
+                            <th class="w-16">Qty</th>
+                            <th class="min-w-[120px]">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="equipmentTableBody">
+                        <!-- Rows will be populated here -->
+                    </tbody>
+                </table>
+                <button onclick="addEquipmentRow()" class="mt-3 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold uppercase transition-colors">
+                    <i class="fas fa-plus mr-1"></i> Add Equipment
+                </button>
+            </div>
+        </section>
+
+        <!-- 5. ISSUES & DELAYS SECTION -->
+        <section class="bg-white border-b-4 border-slate-200 mb-4">
+            <div class="section-header flex items-center gap-2 bg-red-700">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Issues, Delays & RFIs</span>
+            </div>
+            <div class="p-4">
+                <textarea id="issuesText" class="editable-field auto-expand w-full px-3 py-2 text-sm"
+                    placeholder="Document any issues, delays, or RFIs. Include details about impact, resolution status, and responsible parties..."></textarea>
+                <p class="text-xs text-slate-400 mt-1">Leave blank if no issues to report</p>
+            </div>
+        </section>
+
+        <!-- 6. QA/QC INSPECTIONS SECTION -->
+        <section class="bg-white border-b-4 border-slate-200 mb-4">
+            <div class="section-header flex items-center gap-2 bg-purple-700">
+                <i class="fas fa-clipboard-check"></i>
+                <span>QA/QC Testing & Inspections</span>
+            </div>
+            <div class="p-4">
+                <textarea id="qaqcText" class="editable-field auto-expand w-full px-3 py-2 text-sm"
+                    placeholder="Document any QA/QC tests, inspections, or quality control activities performed today..."></textarea>
+                <p class="text-xs text-slate-400 mt-1">Leave blank if no inspections to report</p>
+            </div>
+        </section>
+
+        <!-- 7. SAFETY SECTION -->
+        <section class="bg-white border-b-4 border-slate-200 mb-4">
+            <div class="section-header flex items-center gap-2 bg-safety-green">
+                <i class="fas fa-hard-hat"></i>
+                <span>Safety & Incidents</span>
+            </div>
+            <div class="p-4 space-y-4">
+                <!-- Incident Toggle -->
+                <div class="flex gap-4">
+                    <label class="flex items-center gap-2 p-3 bg-green-50 border-2 border-green-500 cursor-pointer flex-1">
+                        <input type="radio" name="safetyIncident" id="safetyNoIncident" value="none" class="w-4 h-4">
+                        <span class="font-bold text-green-700 text-sm uppercase">No Incidents</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-3 bg-red-50 border-2 border-red-500 cursor-pointer flex-1">
+                        <input type="radio" name="safetyIncident" id="safetyHasIncident" value="incident" class="w-4 h-4">
+                        <span class="font-bold text-red-700 text-sm uppercase">Incident Occurred</span>
+                    </label>
+                </div>
+                <!-- Safety Notes -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Safety Notes / Toolbox Talks</label>
+                    <textarea id="safetyText" class="editable-field auto-expand w-full px-3 py-2 text-sm"
+                        placeholder="Document safety meetings, toolbox talks, observations, near misses..."></textarea>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. COMMUNICATIONS SECTION -->
+        <section class="bg-white border-b-4 border-slate-200 mb-4">
+            <div class="section-header flex items-center gap-2 bg-blue-700">
+                <i class="fas fa-comments"></i>
+                <span>Communications with Contractor</span>
+            </div>
+            <div class="p-4">
+                <textarea id="communicationsText" class="editable-field auto-expand w-full px-3 py-2 text-sm"
+                    placeholder="Document any communications, directives, or discussions with contractors..."></textarea>
+                <p class="text-xs text-slate-400 mt-1">Leave blank if no communications to report</p>
+            </div>
+        </section>
+
+        <!-- 9. VISITORS & DELIVERIES SECTION -->
+        <section class="bg-white border-b-4 border-slate-200 mb-4">
+            <div class="section-header flex items-center gap-2 bg-amber-600">
+                <i class="fas fa-truck-loading"></i>
+                <span>Visitors, Deliveries & Remarks</span>
+            </div>
+            <div class="p-4">
+                <textarea id="visitorsText" class="editable-field auto-expand w-full px-3 py-2 text-sm"
+                    placeholder="Document any visitors to the site, deliveries received, or additional remarks..."></textarea>
+                <p class="text-xs text-slate-400 mt-1">Leave blank if nothing to report</p>
+            </div>
+        </section>
+
+        <!-- 10. PHOTOS SECTION -->
+        <section class="bg-white border-b-4 border-slate-200 mb-4">
+            <div class="section-header flex items-center gap-2">
+                <i class="fas fa-camera"></i>
+                <span>Progress Photos</span>
+                <span id="photoCount" class="ml-auto bg-white/20 px-2 py-0.5 rounded text-xs">0 photos</span>
+            </div>
+            <div id="photosContainer" class="p-4">
+                <!-- Photos will be populated here -->
+                <div class="text-center text-slate-400 py-8">
+                    <i class="fas fa-images text-4xl mb-2"></i>
+                    <p class="text-sm">No photos captured</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 11. SIGNATURE SECTION -->
+        <section class="bg-white mb-4">
+            <div class="section-header flex items-center gap-2 bg-slate-700">
+                <i class="fas fa-signature"></i>
+                <span>Certification & Signature</span>
+            </div>
+            <div class="p-4 space-y-4">
+                <p class="text-xs text-slate-600">
+                    I certify that the information contained in this daily report is accurate and complete to the best of my knowledge.
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Inspector Name</label>
+                        <input type="text" id="signatureName" class="editable-field w-full px-3 py-2 text-sm" placeholder="Full name">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Title</label>
+                        <input type="text" id="signatureTitle" class="editable-field w-full px-3 py-2 text-sm" placeholder="e.g., Project Inspector">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Company</label>
+                        <input type="text" id="signatureCompany" class="editable-field w-full px-3 py-2 text-sm" placeholder="Company name">
+                    </div>
+                </div>
+                <div class="border-t-2 border-slate-300 pt-4 mt-4">
+                    <div class="flex items-end gap-4">
+                        <div class="flex-1">
+                            <div class="border-b-2 border-slate-400 h-12"></div>
+                            <p class="text-xs text-slate-500 mt-1">Signature</p>
+                        </div>
+                        <div class="w-32">
+                            <div class="border-b-2 border-slate-400 h-12 flex items-end justify-center pb-1">
+                                <span id="signatureDate" class="text-sm"></span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1">Date</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 12. DEBUG TOOL PANEL -->
+        <section id="debugPanel" class="debug-panel collapsed mx-4 mb-4">
+            <div class="debug-panel-header" onclick="toggleDebugPanel()">
+                <span class="font-bold text-sm">
+                    <i class="fas fa-tools mr-2"></i>Debug Tool
+                </span>
+                <i id="debugPanelChevron" class="fas fa-chevron-down"></i>
+            </div>
+            <div class="debug-panel-content">
+                <!-- AI Response Data Section -->
+                <div id="debugSectionAI" class="debug-section">
+                    <div class="debug-section-header" onclick="toggleDebugSection('AI')">
+                        <span>AI Response Data</span>
+                        <i class="fas fa-chevron-down debug-chevron"></i>
+                    </div>
+                    <div class="debug-section-content">
+                        <pre id="debugAIContent" class="debug-json">No AI response data</pre>
+                    </div>
+                </div>
+
+                <!-- Field Notes Section -->
+                <div id="debugSectionFieldNotes" class="debug-section">
+                    <div class="debug-section-header" onclick="toggleDebugSection('FieldNotes')">
+                        <span>Field Notes (Raw Capture)</span>
+                        <i class="fas fa-chevron-down debug-chevron"></i>
+                    </div>
+                    <div class="debug-section-content">
+                        <pre id="debugFieldNotesContent" class="debug-json">No field notes data</pre>
+                    </div>
+                </div>
+
+                <!-- User Edits Section -->
+                <div id="debugSectionUserEdits" class="debug-section">
+                    <div class="debug-section-header" onclick="toggleDebugSection('UserEdits')">
+                        <span>User Edits</span>
+                        <i class="fas fa-chevron-down debug-chevron"></i>
+                    </div>
+                    <div class="debug-section-content">
+                        <pre id="debugUserEditsContent" class="debug-json">No user edits</pre>
+                    </div>
+                </div>
+
+                <!-- Current Report State Section -->
+                <div id="debugSectionCurrentState" class="debug-section">
+                    <div class="debug-section-header" onclick="toggleDebugSection('CurrentState')">
+                        <span>Current Report State</span>
+                        <i class="fas fa-chevron-down debug-chevron"></i>
+                    </div>
+                    <div class="debug-section-content">
+                        <pre id="debugCurrentStateContent" class="debug-json">No current state data</pre>
+                    </div>
+                </div>
+
+                <!-- Field Mapping Issues Section -->
+                <div id="debugSectionIssues" class="debug-section">
+                    <div class="debug-section-header" onclick="toggleDebugSection('Issues')">
+                        <span>Field Mapping Issues</span>
+                        <span id="debugIssueCount" class="ml-2 px-2 py-0.5 bg-yellow-500 text-white text-xs rounded-full">0</span>
+                        <i class="fas fa-chevron-down debug-chevron ml-auto"></i>
+                    </div>
+                    <div class="debug-section-content">
+                        <div id="debugIssuesContent">No issues detected</div>
+                    </div>
+                </div>
+
+                <!-- Download Buttons -->
+                <div class="debug-buttons">
+                    <button onclick="downloadDebugJSON()" class="debug-btn debug-btn-json">
+                        <i class="fas fa-download mr-1"></i> Download JSON
+                    </button>
+                    <button onclick="downloadDebugMarkdown()" class="debug-btn debug-btn-md">
+                        <i class="fas fa-file-alt mr-1"></i> Download Report
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        </div><!-- END formViewContent -->
+
+    </main>
+
+    <!-- Save Indicator -->
+    <div id="saveIndicator" class="save-indicator">
+        <i class="fas fa-check mr-1"></i> Saved
+    </div>
+
+    <!-- Submit Confirmation Modal -->
+    <div id="submitModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md">
+            <div class="bg-safety-green text-white p-4 text-center">
+                <i class="fas fa-cloud-upload-alt text-3xl mb-2"></i>
+                <p class="font-bold uppercase">Submit Report</p>
+            </div>
+            <div class="p-4">
+                <p class="text-sm text-slate-600 mb-4">
+                    Are you sure you want to submit this report? This will archive it as a completed report.
+                </p>
+                <div class="space-y-2">
+                    <button onclick="confirmSubmit()" class="w-full p-3 bg-safety-green hover:bg-green-700 text-white font-bold uppercase transition-colors">
+                        Submit Report
+                    </button>
+                    <button onclick="hideSubmitModal()" class="w-full p-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page-specific JavaScript -->
+    <script src="./js/report.js"></script>
+</body>
+</html>

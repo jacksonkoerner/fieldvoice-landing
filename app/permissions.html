@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>System Setup - FieldVoice Pro</title>
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
+    <meta name="theme-color" content="#0a1628">
+
+    <!-- iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FieldVoice">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="./js/pwa-utils.js"></script>
+    <script src="./js/storage-keys.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dot-navy': '#0a1628',
+                        'dot-blue': '#1e3a5f',
+                        'dot-slate': '#334155',
+                        'dot-orange': '#ea580c',
+                        'dot-yellow': '#f59e0b',
+                        'safety-green': '#16a34a',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+        .header-stripe {
+            background: repeating-linear-gradient(-45deg, #f59e0b, #f59e0b 10px, #0a1628 10px, #0a1628 20px);
+            height: 4px;
+            padding-top: env(safe-area-inset-top);
+        }
+
+        /* Sequential Flow Styles */
+        .flow-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0;
+            transform: translateX(30px);
+            pointer-events: none;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .flow-screen.active {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+        .flow-screen.exit-left {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+
+        /* Stepper Styles */
+        .step-indicator {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .step-indicator.pending {
+            background: #334155;
+            color: #64748b;
+        }
+        .step-indicator.active {
+            background: #ea580c;
+            color: white;
+            box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.2);
+        }
+        .step-indicator.completed {
+            background: #16a34a;
+            color: white;
+        }
+        .step-indicator.failed {
+            background: #dc2626;
+            color: white;
+        }
+        .step-indicator.skipped {
+            background: #64748b;
+            color: white;
+        }
+        .step-line {
+            height: 2px;
+            flex: 1;
+            background: #334155;
+            transition: background 0.3s ease;
+        }
+        .step-line.completed {
+            background: #16a34a;
+        }
+
+        /* Permission Icon Animation */
+        @keyframes icon-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .icon-pulse {
+            animation: icon-pulse 2s ease-in-out infinite;
+        }
+
+        /* Button animations */
+        @keyframes button-shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        .btn-shimmer {
+            background: linear-gradient(90deg, #ea580c 0%, #f97316 25%, #ea580c 50%, #f97316 75%, #ea580c 100%);
+            background-size: 200% auto;
+            animation: button-shimmer 3s linear infinite;
+        }
+
+        /* Success check animation */
+        @keyframes check-bounce {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .check-bounce {
+            animation: check-bounce 0.5s ease-out forwards;
+        }
+
+        /* Loading spinner */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+
+        /* Result card styles */
+        .result-card {
+            transition: all 0.3s ease;
+        }
+        .result-card.success {
+            border-color: #16a34a;
+            background: rgba(22, 163, 74, 0.05);
+        }
+        .result-card.failed {
+            border-color: #dc2626;
+            background: rgba(220, 38, 38, 0.05);
+        }
+        .result-card.skipped {
+            border-color: #64748b;
+            background: rgba(100, 116, 139, 0.05);
+        }
+
+        /* Mic level meter */
+        .mic-level { transition: width 0.1s ease-out; }
+
+        /* Debug console */
+        .debug-log { font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 11px; }
+
+        /* Scrollable flow screens */
+        .flow-screen {
+            height: 100vh;
+            height: 100dvh; /* Dynamic viewport height for mobile */
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Permission step content - scrollable area */
+        .step-content-scroll {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 140px; /* Space for fixed button */
+        }
+
+        /* Fixed bottom action area */
+        .step-actions-fixed {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 16px 20px;
+            padding-bottom: max(16px, env(safe-area-inset-bottom));
+            border-top: 1px solid #e5e5e5;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 100;
+        }
+
+        .step-actions-fixed .action-container {
+            max-width: 32rem;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body class="bg-dot-navy min-h-screen overflow-x-hidden">
+    <div class="header-stripe"></div>
+
+    <div class="max-w-lg mx-auto min-h-screen flex flex-col relative">
+
+        <!-- ==================== SCREEN 0: WELCOME ==================== -->
+        <div id="screen-welcome" class="flow-screen active flex flex-col">
+            <div class="flex-1 flex flex-col items-center justify-center p-8 pb-24 text-center overflow-y-auto">
+                <!-- Logo -->
+                <div class="w-24 h-24 bg-dot-yellow flex items-center justify-center mb-6">
+                    <i class="fas fa-hard-hat text-dot-navy text-4xl"></i>
+                </div>
+
+                <h1 class="text-3xl font-bold text-white mb-2">FieldVoice Pro</h1>
+                <p class="text-slate-400 mb-8">Voice-Powered Field Reporting</p>
+
+                <!-- Features preview -->
+                <div class="w-full max-w-sm space-y-3 mb-10">
+                    <div class="flex items-center gap-3 text-left bg-dot-blue/30 p-3 rounded">
+                        <i class="fas fa-microphone text-dot-orange w-6 text-center"></i>
+                        <span class="text-sm text-slate-300">Voice recording for hands-free reports</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-left bg-dot-blue/30 p-3 rounded">
+                        <i class="fas fa-camera text-dot-orange w-6 text-center"></i>
+                        <span class="text-sm text-slate-300">Photo documentation with GPS tags</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-left bg-dot-blue/30 p-3 rounded">
+                        <i class="fas fa-location-dot text-dot-orange w-6 text-center"></i>
+                        <span class="text-sm text-slate-300">Automatic location & weather data</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-left bg-dot-blue/30 p-3 rounded">
+                        <i class="fas fa-keyboard text-dot-orange w-6 text-center"></i>
+                        <span class="text-sm text-slate-300">Native keyboard dictation support</span>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-500 mb-6">We need a few permissions to enable these features</p>
+
+                <button onclick="startPermissionFlow()" class="btn-shimmer w-full max-w-sm py-4 text-white font-bold uppercase text-lg tracking-wide transition-all hover:scale-[1.02]">
+                    <i class="fas fa-rocket mr-2"></i>Get Started
+                </button>
+
+                <button onclick="skipToManual()" class="mt-4 text-slate-500 text-sm underline hover:text-slate-400">
+                    Skip to manual setup
+                </button>
+            </div>
+
+            <footer class="text-center py-4">
+                <p class="text-[10px] text-slate-600 uppercase tracking-widest">
+                    <i class="fas fa-shield-alt mr-1"></i>
+                    DOT Compliant Field Documentation
+                </p>
+            </footer>
+        </div>
+
+        <!-- ==================== SCREEN 1: MICROPHONE ==================== -->
+        <div id="screen-mic" class="flow-screen flex flex-col bg-slate-100">
+            <!-- Header with stepper -->
+            <header class="bg-dot-navy text-white p-4 flex-shrink-0">
+                <div id="stepper-mic" class="flex items-center justify-center gap-2 mb-4"></div>
+                <p class="text-center text-slate-400 text-sm">Step 1 of 3</p>
+            </header>
+
+            <main class="flex-1 flex flex-col items-center p-6 pb-36 overflow-y-auto">
+                <!-- Pre-permission content -->
+                <div id="mic-pre" class="text-center mt-auto mb-auto">
+                    <div class="w-28 h-28 bg-dot-navy rounded-full flex items-center justify-center mx-auto mb-6 icon-pulse">
+                        <i class="fas fa-microphone text-dot-yellow text-5xl"></i>
+                    </div>
+
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Microphone Access</h2>
+                    <p class="text-slate-600 mb-6 max-w-xs mx-auto">
+                        For keyboard dictation. Speak your field reports instead of typing.
+                    </p>
+
+                    <div class="bg-dot-navy/5 border border-slate-200 p-4 rounded mb-8 max-w-xs mx-auto">
+                        <p class="text-xs text-slate-500 uppercase font-bold mb-2">Why we need this</p>
+                        <ul class="text-sm text-slate-600 space-y-1 text-left">
+                            <li><i class="fas fa-check text-safety-green mr-2"></i>Hands-free voice reporting</li>
+                            <li><i class="fas fa-check text-safety-green mr-2"></i>Audio notes on inspections</li>
+                            <li><i class="fas fa-check text-safety-green mr-2"></i>Voice-to-text transcription</li>
+                        </ul>
+                    </div>
+
+                    <button onclick="requestMicPermission()" class="w-full max-w-xs py-4 bg-dot-navy hover:bg-dot-blue text-white font-bold uppercase transition-all">
+                        <i class="fas fa-microphone mr-2"></i>Enable Microphone
+                    </button>
+
+                    <button onclick="skipPermission('mic')" class="mt-3 text-slate-500 text-sm underline hover:text-slate-600">
+                        Skip for now
+                    </button>
+                </div>
+
+                <!-- Loading state -->
+                <div id="mic-loading" class="text-center hidden mt-auto mb-auto">
+                    <div class="w-28 h-28 bg-dot-blue rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-spinner text-white text-4xl spin"></i>
+                    </div>
+                    <p id="mic-loading-title" class="text-slate-600">Waiting for permission...</p>
+                    <p id="mic-loading-subtitle" class="text-xs text-slate-400 mt-2">Tap "Allow" in the browser dialog</p>
+                </div>
+
+                <!-- Success state -->
+                <div id="mic-success" class="text-center hidden mt-auto mb-auto">
+                    <div class="w-28 h-28 bg-safety-green rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-check text-white text-5xl check-bounce"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-safety-green mb-2">Microphone Enabled!</h2>
+                    <p class="text-slate-600 mb-6">You can now record voice reports</p>
+                    <p class="text-xs text-slate-400">Moving to next step...</p>
+                </div>
+
+                <!-- Error state -->
+                <div id="mic-error" class="text-center hidden mt-auto mb-auto">
+                    <div class="w-28 h-28 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-microphone-slash text-white text-5xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-red-600 mb-2">Permission Denied</h2>
+                    <p id="mic-error-message" class="text-slate-600 mb-4 max-w-xs mx-auto"></p>
+
+                    <div id="mic-error-help" class="bg-red-50 border border-red-200 p-4 rounded mb-6 max-w-xs mx-auto text-left">
+                        <p class="text-xs text-red-700 uppercase font-bold mb-2">How to fix</p>
+                        <p id="mic-error-fix" class="text-sm text-red-600"></p>
+                    </div>
+
+                    <button onclick="requestMicPermission()" class="w-full max-w-xs py-3 bg-red-600 hover:bg-red-700 text-white font-bold uppercase transition-all mb-3">
+                        <i class="fas fa-redo mr-2"></i>Try Again
+                    </button>
+
+                    <button onclick="skipPermission('mic')" class="text-slate-500 text-sm underline hover:text-slate-600">
+                        Continue without microphone
+                    </button>
+                </div>
+            </main>
+        </div>
+
+        <!-- ==================== SCREEN 2: CAMERA ==================== -->
+        <div id="screen-cam" class="flow-screen flex flex-col bg-slate-100">
+            <header class="bg-dot-navy text-white p-4 flex-shrink-0">
+                <div id="stepper-cam" class="flex items-center justify-center gap-2 mb-4"></div>
+                <p class="text-center text-slate-400 text-sm">Step 2 of 3</p>
+            </header>
+
+            <main class="flex-1 flex flex-col items-center p-6 pb-36 overflow-y-auto">
+                <!-- Pre-permission content -->
+                <div id="cam-pre" class="text-center mt-auto mb-auto">
+                    <div class="w-28 h-28 bg-dot-orange rounded-full flex items-center justify-center mx-auto mb-6 icon-pulse">
+                        <i class="fas fa-camera text-white text-5xl"></i>
+                    </div>
+
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Camera Access</h2>
+                    <p class="text-slate-600 mb-6 max-w-xs mx-auto">
+                        Required for progress photos and visual documentation.
+                    </p>
+
+                    <div class="bg-dot-orange/5 border border-orange-200 p-4 rounded mb-8 max-w-xs mx-auto">
+                        <p class="text-xs text-slate-500 uppercase font-bold mb-2">Why we need this</p>
+                        <ul class="text-sm text-slate-600 space-y-1 text-left">
+                            <li><i class="fas fa-check text-safety-green mr-2"></i>Progress photo documentation</li>
+                            <li><i class="fas fa-check text-safety-green mr-2"></i>Before/after comparisons</li>
+                            <li><i class="fas fa-check text-safety-green mr-2"></i>GPS-tagged site images</li>
+                        </ul>
+                    </div>
+
+                    <button onclick="requestCamPermission()" class="w-full max-w-xs py-4 bg-dot-orange hover:bg-orange-700 text-white font-bold uppercase transition-all">
+                        <i class="fas fa-camera mr-2"></i>Enable Camera
+                    </button>
+
+                    <button onclick="skipPermission('cam')" class="mt-3 text-slate-500 text-sm underline hover:text-slate-600">
+                        Skip for now
+                    </button>
+                </div>
+
+                <!-- Loading state -->
+                <div id="cam-loading" class="text-center hidden mt-auto mb-auto">
+                    <div class="w-28 h-28 bg-dot-orange rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-spinner text-white text-4xl spin"></i>
+                    </div>
+                    <p id="cam-loading-title" class="text-slate-600">Waiting for permission...</p>
+                    <p id="cam-loading-subtitle" class="text-xs text-slate-400 mt-2">Tap "Allow" in the browser dialog</p>
+                </div>
+
+                <!-- Success state -->
+                <div id="cam-success" class="text-center hidden mt-auto mb-auto">
+                    <div class="w-28 h-28 bg-safety-green rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-check text-white text-5xl check-bounce"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-safety-green mb-2">Camera Enabled!</h2>
+                    <p class="text-slate-600 mb-6">You can now capture progress photos</p>
+                    <p class="text-xs text-slate-400">Moving to next step...</p>
+                </div>
+
+                <!-- Error state -->
+                <div id="cam-error" class="text-center hidden mt-auto mb-auto">
+                    <div class="w-28 h-28 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-camera-slash text-white text-5xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-red-600 mb-2">Permission Denied</h2>
+                    <p id="cam-error-message" class="text-slate-600 mb-4 max-w-xs mx-auto"></p>
+
+                    <div id="cam-error-help" class="bg-red-50 border border-red-200 p-4 rounded mb-6 max-w-xs mx-auto text-left">
+                        <p class="text-xs text-red-700 uppercase font-bold mb-2">How to fix</p>
+                        <p id="cam-error-fix" class="text-sm text-red-600"></p>
+                    </div>
+
+                    <button onclick="requestCamPermission()" class="w-full max-w-xs py-3 bg-red-600 hover:bg-red-700 text-white font-bold uppercase transition-all mb-3">
+                        <i class="fas fa-redo mr-2"></i>Try Again
+                    </button>
+
+                    <button onclick="skipPermission('cam')" class="text-slate-500 text-sm underline hover:text-slate-600">
+                        Continue without camera
+                    </button>
+                </div>
+            </main>
+        </div>
+
+        <!-- ==================== SCREEN 3: LOCATION ==================== -->
+        <div id="screen-loc" class="flow-screen flex flex-col bg-slate-100">
+            <header class="bg-dot-navy text-white p-4 flex-shrink-0">
+                <div id="stepper-loc" class="flex items-center justify-center gap-2 mb-4"></div>
+                <p class="text-center text-slate-400 text-sm">Step 3 of 3</p>
+            </header>
+
+            <main class="flex-1 flex flex-col items-center p-6 pb-36 overflow-y-auto">
+                <!-- Pre-permission content -->
+                <div id="loc-pre" class="text-center mt-auto mb-auto">
+                    <div class="w-28 h-28 bg-safety-green rounded-full flex items-center justify-center mx-auto mb-6 icon-pulse">
+                        <i class="fas fa-location-dot text-white text-5xl"></i>
+                    </div>
+
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Location Access</h2>
+                    <p class="text-slate-600 mb-6 max-w-xs mx-auto">
+                        Required for GPS-tagged reports and local weather data.
+                    </p>
+
+                    <div class="bg-safety-green/5 border border-green-200 p-4 rounded mb-8 max-w-xs mx-auto">
+                        <p class="text-xs text-slate-500 uppercase font-bold mb-2">Why we need this</p>
+                        <ul class="text-sm text-slate-600 space-y-1 text-left">
+                            <li><i class="fas fa-check text-safety-green mr-2"></i>GPS coordinates on reports</li>
+                            <li><i class="fas fa-check text-safety-green mr-2"></i>Local weather conditions</li>
+                            <li><i class="fas fa-check text-safety-green mr-2"></i>Photo geotagging</li>
+                        </ul>
+                    </div>
+
+                    <button onclick="requestLocPermission()" class="w-full max-w-xs py-4 bg-safety-green hover:bg-green-700 text-white font-bold uppercase transition-all">
+                        <i class="fas fa-location-dot mr-2"></i>Enable Location
+                    </button>
+
+                    <button onclick="skipPermission('loc')" class="mt-3 text-slate-500 text-sm underline hover:text-slate-600">
+                        Skip for now
+                    </button>
+                </div>
+
+                <!-- Loading state -->
+                <div id="loc-loading" class="text-center hidden mt-auto mb-auto">
+                    <div class="w-28 h-28 bg-safety-green rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-spinner text-white text-4xl spin"></i>
+                    </div>
+                    <p id="loc-loading-title" class="text-slate-600">Getting your location...</p>
+                    <p id="loc-loading-subtitle" class="text-xs text-slate-400 mt-2">Tap "Allow" in the browser dialog</p>
+                </div>
+
+                <!-- Success state -->
+                <div id="loc-success" class="text-center hidden mt-auto mb-auto">
+                    <div class="w-28 h-28 bg-safety-green rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-check text-white text-5xl check-bounce"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-safety-green mb-2">Location Enabled!</h2>
+                    <p id="loc-success-coords" class="text-slate-600 mb-6">GPS coordinates available</p>
+                    <p class="text-xs text-slate-400">Moving to next step...</p>
+                </div>
+
+                <!-- Error state -->
+                <div id="loc-error" class="text-center hidden mt-auto mb-auto">
+                    <div class="w-28 h-28 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-location-crosshairs text-white text-5xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-red-600 mb-2">Permission Denied</h2>
+                    <p id="loc-error-message" class="text-slate-600 mb-4 max-w-xs mx-auto"></p>
+
+                    <div id="loc-error-help" class="bg-red-50 border border-red-200 p-4 rounded mb-6 max-w-xs mx-auto text-left">
+                        <p class="text-xs text-red-700 uppercase font-bold mb-2">How to fix</p>
+                        <p id="loc-error-fix" class="text-sm text-red-600"></p>
+                    </div>
+
+                    <button onclick="requestLocPermission()" class="w-full max-w-xs py-3 bg-red-600 hover:bg-red-700 text-white font-bold uppercase transition-all mb-3">
+                        <i class="fas fa-redo mr-2"></i>Try Again
+                    </button>
+
+                    <button onclick="skipPermission('loc')" class="text-slate-500 text-sm underline hover:text-slate-600">
+                        Continue without location
+                    </button>
+                </div>
+            </main>
+        </div>
+
+        <!-- ==================== SCREEN 4: SUMMARY ==================== -->
+        <div id="screen-summary" class="flow-screen flex flex-col bg-slate-100">
+            <header class="bg-dot-navy text-white p-6 text-center flex-shrink-0">
+                <div class="w-16 h-16 bg-dot-yellow flex items-center justify-center mx-auto mb-4 rounded-full">
+                    <i id="summary-header-icon" class="fas fa-clipboard-check text-dot-navy text-2xl"></i>
+                </div>
+                <h1 id="summary-title" class="text-2xl font-bold">Setup Complete!</h1>
+                <p id="summary-subtitle" class="text-sm text-slate-400 mt-1">Here's what's enabled</p>
+            </header>
+
+            <main class="flex-1 p-4 pb-6 space-y-3 overflow-y-auto">
+                <!-- Result cards -->
+                <div id="result-mic" class="result-card bg-white border-2 border-slate-200 p-4 flex items-center gap-4">
+                    <div id="result-mic-icon" class="w-12 h-12 bg-slate-200 flex items-center justify-center rounded-full flex-shrink-0">
+                        <i class="fas fa-microphone text-slate-400 text-lg"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-bold text-slate-800 text-sm uppercase">Microphone</p>
+                        <p id="result-mic-status" class="text-xs text-slate-500">Not configured</p>
+                    </div>
+                    <i id="result-mic-badge" class="fas fa-circle text-slate-300"></i>
+                </div>
+
+                <div id="result-cam" class="result-card bg-white border-2 border-slate-200 p-4 flex items-center gap-4">
+                    <div id="result-cam-icon" class="w-12 h-12 bg-slate-200 flex items-center justify-center rounded-full flex-shrink-0">
+                        <i class="fas fa-camera text-slate-400 text-lg"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-bold text-slate-800 text-sm uppercase">Camera</p>
+                        <p id="result-cam-status" class="text-xs text-slate-500">Not configured</p>
+                    </div>
+                    <i id="result-cam-badge" class="fas fa-circle text-slate-300"></i>
+                </div>
+
+                <div id="result-loc" class="result-card bg-white border-2 border-slate-200 p-4 flex items-center gap-4">
+                    <div id="result-loc-icon" class="w-12 h-12 bg-slate-200 flex items-center justify-center rounded-full flex-shrink-0">
+                        <i class="fas fa-location-dot text-slate-400 text-lg"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-bold text-slate-800 text-sm uppercase">Location</p>
+                        <p id="result-loc-status" class="text-xs text-slate-500">Not configured</p>
+                    </div>
+                    <i id="result-loc-badge" class="fas fa-circle text-slate-300"></i>
+                </div>
+
+                <!-- Summary message -->
+                <div id="summary-message" class="bg-dot-navy/5 border border-slate-200 p-4 rounded">
+                    <p id="summary-message-text" class="text-sm text-slate-600 text-center"></p>
+                </div>
+            </main>
+
+            <div class="p-4 bg-white border-t border-slate-200">
+                <button onclick="finishSetup()" class="w-full py-4 bg-safety-green hover:bg-green-700 text-white font-bold uppercase transition-colors flex items-center justify-center gap-2">
+                    <span>Continue to Dashboard</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+
+                <button onclick="retryFailed()" id="retry-failed-btn" class="hidden w-full mt-3 py-3 bg-dot-orange hover:bg-orange-700 text-white font-bold uppercase text-sm transition-colors flex items-center justify-center gap-2">
+                    <i class="fas fa-redo"></i>
+                    <span>Retry Failed Permissions</span>
+                </button>
+            </div>
+
+            <footer class="bg-dot-navy text-center py-3">
+                <p class="text-[10px] text-slate-500 uppercase tracking-widest">
+                    <i class="fas fa-shield-alt mr-1"></i>
+                    DOT Compliant Field Documentation System
+                </p>
+            </footer>
+        </div>
+
+        <!-- ==================== MANUAL SETUP SCREEN ==================== -->
+        <div id="screen-manual" class="flow-screen flex flex-col bg-slate-100">
+            <header class="bg-dot-navy text-white p-6 text-center flex-shrink-0">
+                <div class="w-16 h-16 bg-dot-yellow flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-cog text-dot-navy text-2xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold">Manual Setup</h1>
+                <p class="text-sm text-slate-400 mt-1">Configure permissions individually</p>
+            </header>
+
+            <main class="flex-1 p-4 pb-6 space-y-3 overflow-y-auto">
+                <!-- Device Info -->
+                <div class="bg-slate-800 border border-slate-700 p-3 rounded">
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Device Detection</p>
+                    <p id="deviceInfoText" class="text-xs text-slate-300 font-mono">Detecting...</p>
+                </div>
+
+                <!-- Manual permission cards -->
+                <div id="manual-mic-card" class="bg-white border-2 border-slate-200 p-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-dot-navy flex items-center justify-center flex-shrink-0 rounded">
+                            <i id="manual-mic-icon" class="fas fa-microphone text-dot-yellow text-lg"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-bold text-slate-800 text-sm uppercase">Microphone</p>
+                            <p id="manual-mic-status" class="text-xs text-slate-500">For keyboard dictation</p>
+                        </div>
+                        <button id="manual-mic-btn" onclick="manualRequestMic()" class="px-4 py-2 bg-dot-navy hover:bg-dot-blue text-white font-bold text-xs uppercase transition-colors rounded">
+                            Enable
+                        </button>
+                    </div>
+                </div>
+
+                <div id="manual-cam-card" class="bg-white border-2 border-slate-200 p-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-dot-orange flex items-center justify-center flex-shrink-0 rounded">
+                            <i id="manual-cam-icon" class="fas fa-camera text-white text-lg"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-bold text-slate-800 text-sm uppercase">Camera</p>
+                            <p id="manual-cam-status" class="text-xs text-slate-500">Required for progress photos</p>
+                        </div>
+                        <button id="manual-cam-btn" onclick="manualRequestCam()" class="px-4 py-2 bg-dot-orange hover:bg-orange-700 text-white font-bold text-xs uppercase transition-colors rounded">
+                            Enable
+                        </button>
+                    </div>
+                </div>
+
+                <div id="manual-loc-card" class="bg-white border-2 border-slate-200 p-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-safety-green flex items-center justify-center flex-shrink-0 rounded">
+                            <i id="manual-loc-icon" class="fas fa-location-dot text-white text-lg"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-bold text-slate-800 text-sm uppercase">Location</p>
+                            <p id="manual-loc-status" class="text-xs text-slate-500">Required for GPS & weather</p>
+                        </div>
+                        <button id="manual-loc-btn" onclick="manualRequestLoc()" class="px-4 py-2 bg-safety-green hover:bg-green-700 text-white font-bold text-xs uppercase transition-colors rounded">
+                            Enable
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                <div id="manual-summary" class="bg-white border-2 border-slate-200 p-4">
+                    <div class="flex items-center gap-3">
+                        <div id="manual-summary-icon" class="w-10 h-10 bg-slate-200 flex items-center justify-center rounded">
+                            <i class="fas fa-clock text-slate-400"></i>
+                        </div>
+                        <div>
+                            <p id="manual-summary-title" class="font-bold text-slate-800 text-sm uppercase">Setup Required</p>
+                            <p id="manual-summary-text" class="text-xs text-slate-500">Enable permissions above</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reset Permissions Helper -->
+                <div class="bg-amber-50 border-2 border-amber-300 rounded">
+                    <button onclick="toggleResetHelp()" class="w-full p-3 flex items-center justify-between text-left">
+                        <span class="text-xs text-amber-700 uppercase font-bold"><i class="fas fa-undo mr-2"></i>Reset Permissions (Testing)</span>
+                        <i id="resetHelpToggle" class="fas fa-chevron-down text-amber-500 text-xs"></i>
+                    </button>
+                    <div id="resetHelpPanel" class="hidden border-t border-amber-300">
+                        <div class="p-4 space-y-4">
+                            <p class="text-xs text-amber-700">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                iOS only shows native permission dialogs <strong>once per domain</strong>. If you've already allowed or denied, the dialog won't appear again.
+                            </p>
+
+                            <!-- iOS Safari -->
+                            <div class="bg-white p-3 border border-amber-200 rounded">
+                                <p class="text-xs font-bold text-slate-700 uppercase mb-2 flex items-center gap-2">
+                                    <i class="fab fa-apple"></i> iOS Safari
+                                </p>
+                                <ul class="text-xs text-slate-600 space-y-1">
+                                    <li><strong>Option 1:</strong> Use Safari Private Browsing for fresh state</li>
+                                    <li><strong>Option 2:</strong> Tap "aA" in URL bar > Website Settings > tap each permission to reset</li>
+                                    <li><strong>Option 3:</strong> Settings > Safari > Clear History and Website Data</li>
+                                </ul>
+                            </div>
+
+                            <!-- Chrome -->
+                            <div class="bg-white p-3 border border-amber-200 rounded">
+                                <p class="text-xs font-bold text-slate-700 uppercase mb-2 flex items-center gap-2">
+                                    <i class="fab fa-chrome"></i> Chrome (Desktop/Mobile)
+                                </p>
+                                <ul class="text-xs text-slate-600 space-y-1">
+                                    <li>Click lock icon in address bar</li>
+                                    <li>Click "Site settings"</li>
+                                    <li>Reset each permission to "Ask"</li>
+                                </ul>
+                            </div>
+
+                            <!-- Firefox -->
+                            <div class="bg-white p-3 border border-amber-200 rounded">
+                                <p class="text-xs font-bold text-slate-700 uppercase mb-2 flex items-center gap-2">
+                                    <i class="fab fa-firefox"></i> Firefox
+                                </p>
+                                <ul class="text-xs text-slate-600 space-y-1">
+                                    <li>Click shield/lock icon in address bar</li>
+                                    <li>Click "Clear cookies and site data"</li>
+                                    <li>Or: Click each permission > "Remove permission"</li>
+                                </ul>
+                            </div>
+
+                            <!-- Clear Local Storage -->
+                            <div class="bg-white p-3 border border-amber-200 rounded">
+                                <p class="text-xs font-bold text-slate-700 uppercase mb-2">
+                                    <i class="fas fa-database mr-1"></i> Clear App State
+                                </p>
+                                <p class="text-xs text-slate-600 mb-2">
+                                    Clear this app's saved permission states (doesn't affect browser permissions):
+                                </p>
+                                <button onclick="clearLocalPermissionState()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs uppercase rounded transition-colors">
+                                    <i class="fas fa-trash mr-1"></i> Clear Saved States
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Debug Console -->
+                <div class="bg-slate-900 border border-slate-700 rounded">
+                    <button onclick="toggleDebug()" class="w-full p-3 flex items-center justify-between text-left">
+                        <span class="text-xs text-slate-400 uppercase font-bold"><i class="fas fa-bug mr-2"></i>Debug Console</span>
+                        <i id="debugToggleIcon" class="fas fa-chevron-down text-slate-500 text-xs"></i>
+                    </button>
+                    <div id="debugConsole" class="hidden border-t border-slate-700">
+                        <div id="debugLog" class="debug-log p-3 max-h-48 overflow-y-auto text-slate-300 space-y-1">
+                            <p class="text-slate-500">// Debug log initialized</p>
+                        </div>
+                        <div class="border-t border-slate-700 p-2 flex gap-2">
+                            <button onclick="copyDebugLog()" class="flex-1 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-bold uppercase rounded">
+                                <i class="fas fa-copy mr-1"></i>Copy
+                            </button>
+                            <button onclick="clearDebugLog()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-bold uppercase rounded">
+                                <i class="fas fa-trash mr-1"></i>Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <div class="p-4 bg-white border-t border-slate-200">
+                <button onclick="finishSetup()" class="w-full py-4 bg-safety-green hover:bg-green-700 text-white font-bold uppercase transition-colors flex items-center justify-center gap-2 rounded">
+                    <span>Continue to Dashboard</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Permissions Page Logic -->
+    <script src="./js/permissions.js"></script>
+
+    <!-- Offline Banner -->
+    <div id="offline-banner" class="fixed top-0 left-0 right-0 bg-yellow-500 text-yellow-900 text-center py-2 px-4 font-bold text-sm z-[9999] transform -translate-y-full transition-transform duration-300" style="display: none;">
+        <i class="fas fa-wifi-slash mr-2"></i>You are offline - Some features may be unavailable
+    </div>
+
+    <!-- Initialize PWA features -->
+    <script>initPWA();</script>
+</body>
+</html>

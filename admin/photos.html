@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FieldVoice Pro — Photo Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1d32; color: #e2e8f0; margin: 0; }
+        .safety-stripe { height: 6px; background: repeating-linear-gradient(-45deg, #f59e0b, #f59e0b 10px, #0a1628 10px, #0a1628 20px); }
+        .sidebar { width: 260px; min-height: 100vh; background: #0a1628; border-right: 1px solid #1e3a5f; transition: width 0.3s; }
+        .sidebar.collapsed { width: 72px; }
+        .sidebar.collapsed .nav-text, .sidebar.collapsed .brand-text, .sidebar.collapsed .sidebar-section-label { display: none; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 12px 0; }
+        .sidebar.collapsed .nav-item i { margin-right: 0; }
+        .nav-item { display: flex; align-items: center; padding: 10px 20px; color: #94a3b8; text-decoration: none; border-radius: 8px; margin: 2px 12px; transition: all 0.2s; font-size: 0.9rem; }
+        .nav-item:hover { background: #1e3a5f; color: #f59e0b; }
+        .nav-item.active { background: #1e3a5f; color: #f59e0b; border-left: 3px solid #f59e0b; }
+        .nav-item i { width: 20px; margin-right: 12px; text-align: center; }
+        .sidebar-section-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: #475569; padding: 16px 20px 4px; }
+        .photo-card { background: #0a1628; border: 1px solid #1e3a5f; border-radius: 12px; overflow: hidden; transition: all 0.2s; cursor: pointer; }
+        .photo-card:hover { border-color: #f59e0b; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+        .photo-placeholder { aspect-ratio: 4/3; background: linear-gradient(135deg, #1e3a5f 0%, #0a1628 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        .photo-placeholder .overlay-icon { font-size: 2.5rem; opacity: 0.3; }
+        .photo-placeholder .label { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.7); padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; }
+        .view-toggle { display: flex; border: 1px solid #1e3a5f; border-radius: 8px; overflow: hidden; }
+        .view-toggle button { padding: 6px 14px; background: transparent; color: #94a3b8; border: none; cursor: pointer; font-size: 0.8rem; }
+        .view-toggle button.active { background: #1e3a5f; color: #f59e0b; }
+        #photoMap { height: 400px; border-radius: 12px; border: 1px solid #1e3a5f; }
+        .modal { display: none; }
+        .modal.active { display: flex; }
+        .metadata-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1e3a5f; }
+        .metadata-row:last-child { border: none; }
+    </style>
+</head>
+<body>
+    <div class="safety-stripe"></div>
+    <div class="flex">
+        <nav class="sidebar flex flex-col" id="sidebar">
+            <div class="p-5 flex items-center justify-between border-b border-[#1e3a5f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-gradient-to-br from-[#ea580c] to-[#f59e0b] rounded-lg flex items-center justify-center"><i class="fas fa-microphone-lines text-white text-sm"></i></div>
+                    <div class="brand-text"><div class="text-sm font-bold text-white leading-tight">FieldVoice</div><div class="text-xs text-[#f59e0b] font-semibold">PRO ADMIN</div></div>
+                </div>
+                <button onclick="document.getElementById('sidebar').classList.toggle('collapsed')" class="text-[#64748b] hover:text-[#f59e0b] transition"><i class="fas fa-bars"></i></button>
+            </div>
+            <div class="flex-1 py-4">
+                <div class="sidebar-section-label">Main</div>
+                <a href="index.html" class="nav-item"><i class="fas fa-gauge-high"></i><span class="nav-text">Command Center</span></a>
+                <a href="reports.html" class="nav-item"><i class="fas fa-file-lines"></i><span class="nav-text">Reports</span></a>
+                <a href="messages.html" class="nav-item"><i class="fas fa-comments"></i><span class="nav-text">Messages</span></a>
+                <a href="photos.html" class="nav-item active"><i class="fas fa-camera"></i><span class="nav-text">Photos</span></a>
+                <a href="maps.html" class="nav-item"><i class="fas fa-map-location-dot"></i><span class="nav-text">Job Site Maps</span></a>
+                <div class="sidebar-section-label">Operations</div>
+                <a href="deliveries.html" class="nav-item"><i class="fas fa-truck"></i><span class="nav-text">Deliveries</span></a>
+                <a href="calendar.html" class="nav-item"><i class="fas fa-calendar-days"></i><span class="nav-text">Calendar</span></a>
+                <div class="sidebar-section-label">Intelligence</div>
+                <a href="ai-insights.html" class="nav-item"><i class="fas fa-brain"></i><span class="nav-text">AI Insights</span></a>
+                <a href="users.html" class="nav-item"><i class="fas fa-users-gear"></i><span class="nav-text">Users</span></a>
+            </div>
+            <div class="p-4 border-t border-[#1e3a5f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-[#ea580c] flex items-center justify-center text-white text-sm font-bold">JK</div>
+                    <div class="nav-text"><div class="text-xs font-medium text-white">Jackson Koerner</div><div class="text-xs text-[#64748b]">Admin</div></div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="flex-1 overflow-auto" style="max-height: calc(100vh - 6px);">
+            <div class="flex items-center justify-between px-8 py-4 border-b border-[#1e3a5f] bg-[#0a1628]/50">
+                <div>
+                    <h1 class="text-xl font-bold text-white"><i class="fas fa-camera text-[#f59e0b] mr-2"></i>Photo Management</h1>
+                    <p class="text-sm text-[#64748b]">Geotagged field photos across all projects</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select class="bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none" id="filterProject" onchange="filterPhotos()">
+                        <option value="">All Projects</option>
+                        <option value="nsc">N-S Connector Phase 2</option>
+                        <option value="cbis">CBIS Expansion</option>
+                        <option value="esc">Express Shuttle Connector</option>
+                    </select>
+                    <select class="bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none" id="filterInspector" onchange="filterPhotos()">
+                        <option value="">All Inspectors</option>
+                        <option value="jk">Jackson Koerner</option>
+                        <option value="jc">Justin Cain</option>
+                        <option value="as">Andrew Stiebing</option>
+                    </select>
+                    <div class="view-toggle">
+                        <button class="active" onclick="setView('grid', this)"><i class="fas fa-grid-2"></i></button>
+                        <button onclick="setView('map', this)"><i class="fas fa-map"></i></button>
+                    </div>
+                    <button class="bg-[#ea580c] hover:bg-[#dc2626] text-white px-4 py-2 rounded-lg text-sm font-medium transition" onclick="alert('Export selected photos as ZIP')">
+                        <i class="fas fa-download mr-2"></i>Export
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-8">
+                <!-- Stats -->
+                <div class="grid grid-cols-4 gap-4 mb-6">
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-white">247</div>
+                        <div class="text-xs text-[#64748b]">Total Photos</div>
+                    </div>
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-[#22c55e]">12</div>
+                        <div class="text-xs text-[#64748b]">Today</div>
+                    </div>
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-[#60a5fa]">3</div>
+                        <div class="text-xs text-[#64748b]">Projects</div>
+                    </div>
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-[#fbbf24]">100%</div>
+                        <div class="text-xs text-[#64748b]">Geotagged</div>
+                    </div>
+                </div>
+
+                <!-- Grid View -->
+                <div id="gridView">
+                    <div class="grid grid-cols-4 gap-4" id="photoGrid"></div>
+                </div>
+
+                <!-- Map View -->
+                <div id="mapView" style="display:none;">
+                    <div id="photoMap"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Photo Detail Modal -->
+    <div class="modal fixed inset-0 bg-black/80 items-center justify-center z-50" id="photoModal">
+        <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-xl max-w-3xl w-full mx-4 overflow-hidden">
+            <div class="flex">
+                <div class="flex-1">
+                    <div class="photo-placeholder" style="aspect-ratio:16/10; min-height:400px;" id="modalPhoto">
+                        <i class="fas fa-image overlay-icon text-[#1e3a5f]"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-white" id="modalTitle"></h3>
+                    <button onclick="closePhotoModal()" class="text-[#64748b] hover:text-white"><i class="fas fa-times text-lg"></i></button>
+                </div>
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-xs font-semibold text-[#f59e0b] mb-2">Photo Metadata</h4>
+                        <div class="text-sm" id="modalMetadata"></div>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-semibold text-[#f59e0b] mb-2">Location</h4>
+                        <div id="modalMap" style="height:180px;border-radius:8px;border:1px solid #1e3a5f;"></div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button class="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white px-3 py-1.5 rounded-lg text-xs transition"><i class="fas fa-download mr-1"></i>Download</button>
+                    <button class="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white px-3 py-1.5 rounded-lg text-xs transition"><i class="fas fa-share mr-1"></i>Share</button>
+                    <button class="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white px-3 py-1.5 rounded-lg text-xs transition"><i class="fas fa-link mr-1"></i>Link to Report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const photos = [
+            { id: 1, title: 'RCP Pipe Installation STA 8+25', project: 'N-S Connector Phase 2', projectKey: 'nsc', inspector: 'Jackson Koerner', inspectorKey: 'jk', date: '2025-06-12 08:42 AM', lat: 29.9938, lng: -90.2572, heading: 145, icon: 'fa-pipe-section', desc: '24" Class III RCP being lowered into trench' },
+            { id: 2, title: 'Trench Excavation STA 8+50', project: 'N-S Connector Phase 2', projectKey: 'nsc', inspector: 'Jackson Koerner', inspectorKey: 'jk', date: '2025-06-12 08:55 AM', lat: 29.9936, lng: -90.2568, heading: 220, icon: 'fa-digging', desc: 'Cat 320 excavator trench depth verification' },
+            { id: 3, title: 'Concrete Pour STA 12+50', project: 'CBIS Expansion', projectKey: 'cbis', inspector: 'Justin Cain', inspectorKey: 'jc', date: '2025-06-12 07:15 AM', lat: 29.9882, lng: -90.2525, heading: 90, icon: 'fa-cube', desc: 'Pump truck placing Class A concrete on taxiway shoulder' },
+            { id: 4, title: 'Slump Test — Truck #1', project: 'CBIS Expansion', projectKey: 'cbis', inspector: 'Justin Cain', inspectorKey: 'jc', date: '2025-06-12 07:12 AM', lat: 29.9880, lng: -90.2522, heading: 180, icon: 'fa-flask', desc: 'Slump cone test: 4.5", within spec (3"-5")' },
+            { id: 5, title: 'Rebar Verification', project: 'CBIS Expansion', projectKey: 'cbis', inspector: 'Justin Cain', inspectorKey: 'jc', date: '2025-06-12 06:45 AM', lat: 29.9884, lng: -90.2528, heading: 270, icon: 'fa-grip-lines', desc: '#5 bars @ 12" OC both ways, checked and verified' },
+            { id: 6, title: 'Vibrating Screed Operation', project: 'CBIS Expansion', projectKey: 'cbis', inspector: 'Justin Cain', inspectorKey: 'jc', date: '2025-06-12 08:30 AM', lat: 29.9881, lng: -90.2520, heading: 45, icon: 'fa-bars', desc: 'Boh Bros finishing concrete with vibrating screed' },
+            { id: 7, title: 'Lime Spreader STA 2+00', project: 'Express Shuttle Connector', projectKey: 'esc', inspector: 'Andrew Stiebing', inspectorKey: 'as', date: '2025-06-12 07:30 AM', lat: 29.9965, lng: -90.2655, heading: 310, icon: 'fa-truck-droplet', desc: 'Lime treatment application at 50 lbs/SY' },
+            { id: 8, title: 'Compaction Test Location', project: 'Express Shuttle Connector', projectKey: 'esc', inspector: 'Andrew Stiebing', inspectorKey: 'as', date: '2025-06-12 10:15 AM', lat: 29.9962, lng: -90.2648, heading: 195, icon: 'fa-vial', desc: 'Nuclear gauge test site — 96.2% Standard Proctor' },
+            { id: 9, title: 'Water Main Relocation', project: 'Express Shuttle Connector', projectKey: 'esc', inspector: 'Andrew Stiebing', inspectorKey: 'as', date: '2025-06-12 09:00 AM', lat: 29.9960, lng: -90.2650, heading: 120, icon: 'fa-faucet-drip', desc: 'Peterson Plumbing 8" DIP water main in trench' },
+            { id: 10, title: 'Storm Drain Backfill', project: 'N-S Connector Phase 2', projectKey: 'nsc', inspector: 'Jackson Koerner', inspectorKey: 'jk', date: '2025-06-11 02:30 PM', lat: 29.9940, lng: -90.2575, heading: 30, icon: 'fa-fill', desc: 'Select fill backfill around 24" RCP pipe' },
+            { id: 11, title: 'Embankment Fill Operations', project: 'N-S Connector Phase 2', projectKey: 'nsc', inspector: 'Jackson Koerner', inspectorKey: 'jk', date: '2025-06-11 10:00 AM', lat: 29.9945, lng: -90.2580, heading: 165, icon: 'fa-mountain', desc: 'Cat 740 ADT dumping select fill STA 16+00' },
+            { id: 12, title: 'Form Work Setup STA 12+50', project: 'CBIS Expansion', projectKey: 'cbis', inspector: 'Justin Cain', inspectorKey: 'jc', date: '2025-06-11 09:00 AM', lat: 29.9883, lng: -90.2526, heading: 85, icon: 'fa-layer-group', desc: 'Steel forms set for taxiway shoulder pour' },
+            { id: 13, title: 'Dowel Epoxy Installation', project: 'CBIS Expansion', projectKey: 'cbis', inspector: 'Justin Cain', inspectorKey: 'jc', date: '2025-06-11 11:00 AM', lat: 29.9882, lng: -90.2524, heading: 200, icon: 'fa-hammer', desc: 'Hilti TE 70 drilling dowels into existing pavement' },
+            { id: 14, title: 'DOT Pre-Pour Review', project: 'CBIS Expansion', projectKey: 'cbis', inspector: 'Justin Cain', inspectorKey: 'jc', date: '2025-06-11 02:00 PM', lat: 29.9885, lng: -90.2530, heading: 340, icon: 'fa-clipboard-check', desc: 'DOT inspector reviewing rebar and forms — approved' },
+            { id: 15, title: 'Silt Fence Installation', project: 'Express Shuttle Connector', projectKey: 'esc', inspector: 'Andrew Stiebing', inspectorKey: 'as', date: '2025-06-11 08:30 AM', lat: 29.9968, lng: -90.2660, heading: 250, icon: 'fa-shield-halved', desc: 'Erosion control silt fence along wetland buffer' },
+            { id: 16, title: 'Clearing Operations STA 6+00', project: 'Express Shuttle Connector', projectKey: 'esc', inspector: 'Andrew Stiebing', inspectorKey: 'as', date: '2025-06-11 07:45 AM', lat: 29.9970, lng: -90.2665, heading: 290, icon: 'fa-tree', desc: 'Cat 330 with shear removing trees in ROW' },
+        ];
+
+        let photoMap = null;
+        let modalMap = null;
+
+        function renderPhotoGrid(list) {
+            const grid = document.getElementById('photoGrid');
+            const gradients = [
+                'linear-gradient(135deg, #1a2744, #0d1829)',
+                'linear-gradient(135deg, #1e3347, #0a1628)',
+                'linear-gradient(135deg, #1a2d42, #0e1a2e)',
+                'linear-gradient(135deg, #1c2f4a, #0b1726)',
+            ];
+            grid.innerHTML = list.map((p, i) => `
+                <div class="photo-card" onclick="openPhoto(${p.id})">
+                    <div class="photo-placeholder" style="background:${gradients[i % 4]}">
+                        <i class="fas ${p.icon || 'fa-image'} overlay-icon text-[#1e3a5f]" style="font-size:3rem;opacity:0.15;"></i>
+                        <div class="text-xs text-[#94a3b8] mt-2 px-4 text-center">${p.desc}</div>
+                        <div class="label text-[#94a3b8]"><i class="fas fa-location-dot mr-1"></i>${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</div>
+                    </div>
+                    <div class="p-3">
+                        <div class="text-sm font-medium text-white mb-1 truncate">${p.title}</div>
+                        <div class="flex items-center justify-between">
+                            <div class="text-xs text-[#f59e0b]">${p.project.split(' ').slice(0,2).join(' ')}</div>
+                            <div class="text-xs text-[#64748b]">${p.inspector.split(' ')[0]}</div>
+                        </div>
+                        <div class="text-xs text-[#475569] mt-1">${p.date}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderPhotoMap() {
+            if (photoMap) photoMap.remove();
+            photoMap = L.map('photoMap', { zoomControl: true }).setView([29.993, -90.258], 14);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap © CARTO'
+            }).addTo(photoMap);
+
+            const icon = L.divIcon({ className: '', html: '<div style="background:#ea580c;width:12px;height:12px;border-radius:50%;border:2px solid #f59e0b;box-shadow:0 0 6px rgba(234,88,12,0.5)"></div>', iconSize: [12, 12] });
+
+            photos.forEach(p => {
+                L.marker([p.lat, p.lng], { icon }).addTo(photoMap)
+                    .bindPopup(`<b>${p.title}</b><br>${p.project}<br><small>${p.inspector} • ${p.date}</small>`);
+            });
+        }
+
+        function openPhoto(id) {
+            const p = photos.find(x => x.id === id);
+            if (!p) return;
+            document.getElementById('modalTitle').textContent = p.title;
+            document.getElementById('modalPhoto').innerHTML = `
+                <i class="fas ${p.icon || 'fa-image'} overlay-icon text-[#1e3a5f]" style="font-size:4rem;opacity:0.15;"></i>
+                <div class="text-sm text-[#94a3b8] mt-3 px-8 text-center">${p.desc}</div>
+            `;
+            document.getElementById('modalMetadata').innerHTML = `
+                <div class="metadata-row"><span class="text-[#64748b]">Project</span><span class="text-white">${p.project}</span></div>
+                <div class="metadata-row"><span class="text-[#64748b]">Inspector</span><span class="text-white">${p.inspector}</span></div>
+                <div class="metadata-row"><span class="text-[#64748b]">Date/Time</span><span class="text-white">${p.date}</span></div>
+                <div class="metadata-row"><span class="text-[#64748b]">GPS Coords</span><span class="text-white font-mono text-xs">${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}</span></div>
+                <div class="metadata-row"><span class="text-[#64748b]">Heading</span><span class="text-white">${p.heading}°</span></div>
+                <div class="metadata-row"><span class="text-[#64748b]">Description</span><span class="text-white text-xs">${p.desc}</span></div>
+            `;
+
+            document.getElementById('photoModal').classList.add('active');
+
+            setTimeout(() => {
+                if (modalMap) modalMap.remove();
+                modalMap = L.map('modalMap', { zoomControl: false }).setView([p.lat, p.lng], 16);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(modalMap);
+                const icon = L.divIcon({ className: '', html: '<div style="background:#ea580c;width:12px;height:12px;border-radius:50%;border:2px solid #f59e0b;"></div>', iconSize: [12, 12] });
+                L.marker([p.lat, p.lng], { icon }).addTo(modalMap);
+            }, 100);
+        }
+
+        function closePhotoModal() {
+            document.getElementById('photoModal').classList.remove('active');
+        }
+
+        function setView(view, btn) {
+            document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if (view === 'grid') {
+                document.getElementById('gridView').style.display = 'block';
+                document.getElementById('mapView').style.display = 'none';
+            } else {
+                document.getElementById('gridView').style.display = 'none';
+                document.getElementById('mapView').style.display = 'block';
+                setTimeout(() => renderPhotoMap(), 100);
+            }
+        }
+
+        function filterPhotos() {
+            const project = document.getElementById('filterProject').value;
+            const inspector = document.getElementById('filterInspector').value;
+            let filtered = photos;
+            if (project) filtered = filtered.filter(p => p.projectKey === project);
+            if (inspector) filtered = filtered.filter(p => p.inspectorKey === inspector);
+            renderPhotoGrid(filtered);
+        }
+
+        renderPhotoGrid(photos);
+    </script>
+</body>
+</html>

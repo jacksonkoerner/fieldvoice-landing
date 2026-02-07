@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FieldVoice Pro — AI Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1d32; color: #e2e8f0; margin: 0; }
+        .safety-stripe { height: 6px; background: repeating-linear-gradient(-45deg, #f59e0b, #f59e0b 10px, #0a1628 10px, #0a1628 20px); }
+        .sidebar { width: 260px; min-height: 100vh; background: #0a1628; border-right: 1px solid #1e3a5f; transition: width 0.3s; }
+        .sidebar.collapsed { width: 72px; }
+        .sidebar.collapsed .nav-text, .sidebar.collapsed .brand-text, .sidebar.collapsed .sidebar-section-label { display: none; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 12px 0; }
+        .sidebar.collapsed .nav-item i { margin-right: 0; }
+        .nav-item { display: flex; align-items: center; padding: 10px 20px; color: #94a3b8; text-decoration: none; border-radius: 8px; margin: 2px 12px; transition: all 0.2s; font-size: 0.9rem; }
+        .nav-item:hover { background: #1e3a5f; color: #f59e0b; }
+        .nav-item.active { background: #1e3a5f; color: #f59e0b; border-left: 3px solid #f59e0b; }
+        .nav-item i { width: 20px; margin-right: 12px; text-align: center; }
+        .sidebar-section-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: #475569; padding: 16px 20px 4px; }
+        .ai-card { background: linear-gradient(135deg, #0a1628 0%, #0d1f35 100%); border: 1px solid #1e3a5f; border-radius: 12px; padding: 20px; }
+        .ai-card:hover { border-color: #f59e0b; }
+        .insight-card { background: #0a1628; border: 1px solid #1e3a5f; border-radius: 10px; padding: 16px; transition: all 0.2s; }
+        .insight-card:hover { border-color: #a855f7; }
+        .glow-border { border-color: rgba(168, 85, 247, 0.3); box-shadow: 0 0 20px rgba(168, 85, 247, 0.05); }
+        .ai-chat-bubble { background: #1e3a5f; border-radius: 12px; border-bottom-left-radius: 4px; padding: 12px 16px; }
+        .ai-chat-user { background: #ea580c; border-radius: 12px; border-bottom-right-radius: 4px; padding: 12px 16px; }
+        .confidence-bar { height: 6px; border-radius: 3px; background: #1e3a5f; overflow: hidden; }
+        .confidence-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+        .memory-tag { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 0.7rem; margin: 2px; background: rgba(30,58,95,0.5); color: #94a3b8; border: 1px solid #1e3a5f; }
+        .tab-nav { display: flex; gap: 2px; border-bottom: 1px solid #1e3a5f; }
+        .tab-nav button { padding: 10px 20px; background: transparent; color: #64748b; border: none; cursor: pointer; font-size: 0.85rem; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .tab-nav button.active { color: #f59e0b; border-bottom-color: #f59e0b; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .typing-dot { animation: blink 1.4s infinite; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+        .config-toggle { width: 44px; height: 24px; border-radius: 12px; background: #1e3a5f; position: relative; cursor: pointer; transition: background 0.2s; }
+        .config-toggle.on { background: #22c55e; }
+        .config-toggle::after { content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%; background: white; top: 3px; left: 3px; transition: left 0.2s; }
+        .config-toggle.on::after { left: 23px; }
+    </style>
+</head>
+<body>
+    <div class="safety-stripe"></div>
+    <div class="flex">
+        <nav class="sidebar flex flex-col" id="sidebar">
+            <div class="p-5 flex items-center justify-between border-b border-[#1e3a5f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-gradient-to-br from-[#ea580c] to-[#f59e0b] rounded-lg flex items-center justify-center"><i class="fas fa-microphone-lines text-white text-sm"></i></div>
+                    <div class="brand-text"><div class="text-sm font-bold text-white leading-tight">FieldVoice</div><div class="text-xs text-[#f59e0b] font-semibold">PRO ADMIN</div></div>
+                </div>
+                <button onclick="document.getElementById('sidebar').classList.toggle('collapsed')" class="text-[#64748b] hover:text-[#f59e0b] transition"><i class="fas fa-bars"></i></button>
+            </div>
+            <div class="flex-1 py-4">
+                <div class="sidebar-section-label">Main</div>
+                <a href="index.html" class="nav-item"><i class="fas fa-gauge-high"></i><span class="nav-text">Command Center</span></a>
+                <a href="reports.html" class="nav-item"><i class="fas fa-file-lines"></i><span class="nav-text">Reports</span></a>
+                <a href="messages.html" class="nav-item"><i class="fas fa-comments"></i><span class="nav-text">Messages</span></a>
+                <a href="photos.html" class="nav-item"><i class="fas fa-camera"></i><span class="nav-text">Photos</span></a>
+                <a href="maps.html" class="nav-item"><i class="fas fa-map-location-dot"></i><span class="nav-text">Job Site Maps</span></a>
+                <div class="sidebar-section-label">Operations</div>
+                <a href="deliveries.html" class="nav-item"><i class="fas fa-truck"></i><span class="nav-text">Deliveries</span></a>
+                <a href="calendar.html" class="nav-item"><i class="fas fa-calendar-days"></i><span class="nav-text">Calendar</span></a>
+                <div class="sidebar-section-label">Intelligence</div>
+                <a href="ai-insights.html" class="nav-item active"><i class="fas fa-brain"></i><span class="nav-text">AI Insights</span></a>
+                <a href="users.html" class="nav-item"><i class="fas fa-users-gear"></i><span class="nav-text">Users</span></a>
+            </div>
+            <div class="p-4 border-t border-[#1e3a5f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-[#ea580c] flex items-center justify-center text-white text-sm font-bold">JK</div>
+                    <div class="nav-text"><div class="text-xs font-medium text-white">Jackson Koerner</div><div class="text-xs text-[#64748b]">Admin</div></div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="flex-1 overflow-auto" style="max-height: calc(100vh - 6px);">
+            <div class="flex items-center justify-between px-8 py-4 border-b border-[#1e3a5f] bg-[#0a1628]/50">
+                <div>
+                    <h1 class="text-xl font-bold text-white"><i class="fas fa-brain text-[#a855f7] mr-2"></i>AI Command Center</h1>
+                    <p class="text-sm text-[#64748b]">Intelligence engine powering FieldVoice field-to-office pipeline</p>
+                </div>
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="w-2 h-2 bg-[#a855f7] rounded-full" style="animation: blink 2s infinite"></span>
+                    <span class="text-[#c4b5fd]">AI Engine Active</span>
+                    <span class="text-[#64748b]">•</span>
+                    <span class="text-[#64748b]">156 reports processed</span>
+                </div>
+            </div>
+
+            <div class="p-8">
+                <!-- Tabs -->
+                <div class="tab-nav mb-6">
+                    <button class="active" onclick="switchTab('insights')"><i class="fas fa-lightbulb mr-2"></i>Insights</button>
+                    <button onclick="switchTab('knowledge')"><i class="fas fa-database mr-2"></i>Knowledge Base</button>
+                    <button onclick="switchTab('quality')"><i class="fas fa-chart-bar mr-2"></i>Report Quality</button>
+                    <button onclick="switchTab('ask')"><i class="fas fa-robot mr-2"></i>Ask AI</button>
+                    <button onclick="switchTab('memory')"><i class="fas fa-memory mr-2"></i>AI Memory</button>
+                    <button onclick="switchTab('config')"><i class="fas fa-gear mr-2"></i>Configuration</button>
+                </div>
+
+                <!-- INSIGHTS TAB -->
+                <div class="tab-content active" id="tab-insights">
+                    <!-- AI Insights Cards -->
+                    <div class="grid grid-cols-2 gap-5 mb-6">
+                        <div class="insight-card glow-border">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-[#a855f7]/20 flex items-center justify-center shrink-0"><i class="fas fa-users text-[#a855f7]"></i></div>
+                                <div>
+                                    <div class="text-sm font-semibold text-white mb-1">Contractor Staffing Alert</div>
+                                    <p class="text-sm text-[#94a3b8] leading-relaxed">Kass Brothers has been consistently understaffed on storm drain crews — averaging 5.2 workers vs. the 8 specified in their mobilization plan. This has slowed RCP installation by approximately 18% over the last 3 weeks.</p>
+                                    <div class="flex items-center gap-2 mt-3">
+                                        <span class="text-xs bg-[#7c2d12]/40 text-[#fb923c] px-2 py-0.5 rounded">High Impact</span>
+                                        <span class="text-xs text-[#64748b]">Based on 12 daily reports</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="insight-card glow-border">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-[#3b82f6]/20 flex items-center justify-center shrink-0"><i class="fas fa-cloud-rain text-[#3b82f6]"></i></div>
+                                <div>
+                                    <div class="text-sm font-semibold text-white mb-1">Weather Impact Analysis</div>
+                                    <p class="text-sm text-[#94a3b8] leading-relaxed">Weather delays have increased 30% this month compared to last month. 4 of 22 work days had partial or full rain shutdowns. Afternoon thunderstorm pattern is affecting concrete pour scheduling — recommend shifting pours to 6:00 AM starts.</p>
+                                    <div class="flex items-center gap-2 mt-3">
+                                        <span class="text-xs bg-[#1e3a5f] text-[#60a5fa] px-2 py-0.5 rounded">Scheduling</span>
+                                        <span class="text-xs text-[#64748b]">Based on weather + production data</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="insight-card glow-border">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-[#22c55e]/20 flex items-center justify-center shrink-0"><i class="fas fa-chart-line text-[#22c55e]"></i></div>
+                                <div>
+                                    <div class="text-sm font-semibold text-white mb-1">Production Trend — N-S Connector</div>
+                                    <p class="text-sm text-[#94a3b8] leading-relaxed">Storm drain installation rate is trending upward: 180 LF/day last week vs. 150 LF/day two weeks ago. At current pace, the storm drain phase will complete 3 days ahead of the baseline schedule. Recommend scheduling the next concrete headwall pour for Friday.</p>
+                                    <div class="flex items-center gap-2 mt-3">
+                                        <span class="text-xs bg-[#052e16]/60 text-[#86efac] px-2 py-0.5 rounded">Positive Trend</span>
+                                        <span class="text-xs text-[#64748b]">Based on daily quantity tracking</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="insight-card glow-border">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-[#f59e0b]/20 flex items-center justify-center shrink-0"><i class="fas fa-triangle-exclamation text-[#f59e0b]"></i></div>
+                                <div>
+                                    <div class="text-sm font-semibold text-white mb-1">Quality Concern — Express Shuttle</div>
+                                    <p class="text-sm text-[#94a3b8] leading-relaxed">Compaction test results on the Express Shuttle subgrade are consistently at 96-96.5% — just above the 95% minimum spec. The tight margin suggests the lime treatment spread rate or curing time may need adjustment before pavement placement begins.</p>
+                                    <div class="flex items-center gap-2 mt-3">
+                                        <span class="text-xs bg-[#78350f]/40 text-[#fbbf24] px-2 py-0.5 rounded">Quality Watch</span>
+                                        <span class="text-xs text-[#64748b]">Based on 6 compaction tests</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contractor Performance -->
+                    <div class="ai-card">
+                        <h3 class="text-sm font-semibold text-white mb-4"><i class="fas fa-chart-bar text-[#a855f7] mr-2"></i>Contractor Performance Trends</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex items-center justify-between text-sm mb-1">
+                                    <span class="text-[#94a3b8]">Hunt Gibbs Boh Metro</span>
+                                    <span class="text-[#22c55e]">92% — Excellent</span>
+                                </div>
+                                <div class="confidence-bar"><div class="confidence-fill bg-[#22c55e]" style="width:92%"></div></div>
+                                <div class="text-xs text-[#64748b] mt-1">Consistent crew size, equipment always maintained, on-schedule</div>
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between text-sm mb-1">
+                                    <span class="text-[#94a3b8]">Boh Bros (Concrete)</span>
+                                    <span class="text-[#22c55e]">95% — Excellent</span>
+                                </div>
+                                <div class="confidence-bar"><div class="confidence-fill bg-[#22c55e]" style="width:95%"></div></div>
+                                <div class="text-xs text-[#64748b] mt-1">Zero rejected loads, QA/QC consistently within spec, reliable delivery</div>
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between text-sm mb-1">
+                                    <span class="text-[#94a3b8]">Kass Brothers</span>
+                                    <span class="text-[#fbbf24]">74% — Needs Improvement</span>
+                                </div>
+                                <div class="confidence-bar"><div class="confidence-fill bg-[#fbbf24]" style="width:74%"></div></div>
+                                <div class="text-xs text-[#64748b] mt-1">Understaffed 60% of days, production below plan, quality acceptable</div>
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between text-sm mb-1">
+                                    <span class="text-[#94a3b8]">Frischhertz Electric</span>
+                                    <span class="text-[#60a5fa]">85% — Good</span>
+                                </div>
+                                <div class="confidence-bar"><div class="confidence-fill bg-[#60a5fa]" style="width:85%"></div></div>
+                                <div class="text-xs text-[#64748b] mt-1">Good work quality, occasional coordination delays with other trades</div>
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between text-sm mb-1">
+                                    <span class="text-[#94a3b8]">Peterson Plumbing</span>
+                                    <span class="text-[#fbbf24]">71% — Needs Improvement</span>
+                                </div>
+                                <div class="confidence-bar"><div class="confidence-fill bg-[#fbbf24]" style="width:71%"></div></div>
+                                <div class="text-xs text-[#64748b] mt-1">Multiple coordination issues, started in wrong sections twice, quality OK</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KNOWLEDGE BASE TAB -->
+                <div class="tab-content" id="tab-knowledge">
+                    <div class="space-y-5">
+                        <div class="ai-card">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-sm font-semibold text-white"><i class="fas fa-road text-[#f59e0b] mr-2"></i>North-South Connector Road Phase 2</h3>
+                                <span class="text-xs text-[#64748b]">68 reports ingested</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4 text-xs">
+                                <div>
+                                    <div class="text-[#f59e0b] font-semibold mb-2">Active Work Items</div>
+                                    <div class="text-[#94a3b8] space-y-1">
+                                        <div>• Storm drain installation (STA 8+25 → 10+50)</div>
+                                        <div>• Embankment fill (STA 15+00 → 18+00)</div>
+                                        <div>• Headwall construction (DS-4, DS-5)</div>
+                                        <div>• Curb & gutter forming</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-[#f59e0b] font-semibold mb-2">Known Contractors</div>
+                                    <div class="text-[#94a3b8] space-y-1">
+                                        <div>• Hunt Gibbs Boh Metro (Prime)</div>
+                                        <div>• Kass Brothers (Storm drain)</div>
+                                        <div>• Boh Bros (Concrete)</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-[#f59e0b] font-semibold mb-2">Key Specs</div>
+                                    <div class="text-[#94a3b8] space-y-1">
+                                        <div>• 24" RCP Class III pipe</div>
+                                        <div>• Class A Concrete (4000 PSI)</div>
+                                        <div>• 95% Modified Proctor (fill)</div>
+                                        <div>• DOTD standard details</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ai-card">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-sm font-semibold text-white"><i class="fas fa-plane text-[#60a5fa] mr-2"></i>CBIS Expansion</h3>
+                                <span class="text-xs text-[#64748b]">52 reports ingested</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4 text-xs">
+                                <div>
+                                    <div class="text-[#60a5fa] font-semibold mb-2">Active Work Items</div>
+                                    <div class="text-[#94a3b8] space-y-1">
+                                        <div>• Taxiway shoulder concrete</div>
+                                        <div>• Electrical duct bank (Seg E-3)</div>
+                                        <div>• Fire line relocation</div>
+                                        <div>• Airfield lighting upgrades</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-[#60a5fa] font-semibold mb-2">Known Contractors</div>
+                                    <div class="text-[#94a3b8] space-y-1">
+                                        <div>• Boh Bros (Concrete, prime)</div>
+                                        <div>• Frischhertz Electric</div>
+                                        <div>• Peterson Plumbing</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-[#60a5fa] font-semibold mb-2">Special Requirements</div>
+                                    <div class="text-[#94a3b8] space-y-1">
+                                        <div>• FAA coordination required</div>
+                                        <div>• Night work window: 10PM-4AM</div>
+                                        <div>• Airfield safety protocols</div>
+                                        <div>• Broom finish perpendicular</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ai-card">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-sm font-semibold text-white"><i class="fas fa-shuttle-van text-[#22c55e] mr-2"></i>Express Shuttle Connector Road</h3>
+                                <span class="text-xs text-[#64748b]">36 reports ingested</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4 text-xs">
+                                <div>
+                                    <div class="text-[#22c55e] font-semibold mb-2">Active Work Items</div>
+                                    <div class="text-[#94a3b8] space-y-1">
+                                        <div>• Subgrade lime treatment</div>
+                                        <div>• Clearing & grubbing</div>
+                                        <div>• 8" Water main relocation</div>
+                                        <div>• Erosion control installation</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-[#22c55e] font-semibold mb-2">Known Contractors</div>
+                                    <div class="text-[#94a3b8] space-y-1">
+                                        <div>• Hunt Gibbs Boh Metro</div>
+                                        <div>• Peterson Plumbing</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-[#22c55e] font-semibold mb-2">Key Specs</div>
+                                    <div class="text-[#94a3b8] space-y-1">
+                                        <div>• Lime: 50 lbs/SY</div>
+                                        <div>• 95% Standard Proctor</div>
+                                        <div>• Wetland buffer setback</div>
+                                        <div>• SWPPP compliance</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- REPORT QUALITY TAB -->
+                <div class="tab-content" id="tab-quality">
+                    <div class="grid grid-cols-3 gap-5 mb-6">
+                        <div class="ai-card text-center">
+                            <div class="text-4xl font-bold text-[#22c55e] mb-1">91.4%</div>
+                            <div class="text-sm text-[#94a3b8]">Avg AI Confidence</div>
+                            <div class="text-xs text-[#64748b]">Across all 156 reports</div>
+                        </div>
+                        <div class="ai-card text-center">
+                            <div class="text-4xl font-bold text-[#60a5fa] mb-1">97%</div>
+                            <div class="text-sm text-[#94a3b8]">Contractor Extraction</div>
+                            <div class="text-xs text-[#64748b]">Successfully identified</div>
+                        </div>
+                        <div class="ai-card text-center">
+                            <div class="text-4xl font-bold text-[#a855f7] mb-1">89%</div>
+                            <div class="text-sm text-[#94a3b8]">Quantity Accuracy</div>
+                            <div class="text-xs text-[#64748b]">Parsed from voice notes</div>
+                        </div>
+                    </div>
+
+                    <div class="ai-card mb-5">
+                        <h3 class="text-sm font-semibold text-white mb-4">Extraction Accuracy by Category</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-[#94a3b8] w-32">Contractors</span>
+                                <div class="flex-1 confidence-bar"><div class="confidence-fill bg-[#22c55e]" style="width:97%"></div></div>
+                                <span class="text-xs text-[#22c55e] w-10 text-right">97%</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-[#94a3b8] w-32">Equipment</span>
+                                <div class="flex-1 confidence-bar"><div class="confidence-fill bg-[#22c55e]" style="width:93%"></div></div>
+                                <span class="text-xs text-[#22c55e] w-10 text-right">93%</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-[#94a3b8] w-32">Worker Counts</span>
+                                <div class="flex-1 confidence-bar"><div class="confidence-fill bg-[#60a5fa]" style="width:88%"></div></div>
+                                <span class="text-xs text-[#60a5fa] w-10 text-right">88%</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-[#94a3b8] w-32">Quantities</span>
+                                <div class="flex-1 confidence-bar"><div class="confidence-fill bg-[#60a5fa]" style="width:89%"></div></div>
+                                <span class="text-xs text-[#60a5fa] w-10 text-right">89%</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-[#94a3b8] w-32">Station References</span>
+                                <div class="flex-1 confidence-bar"><div class="confidence-fill bg-[#22c55e]" style="width:95%"></div></div>
+                                <span class="text-xs text-[#22c55e] w-10 text-right">95%</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-[#94a3b8] w-32">Weather Data</span>
+                                <div class="flex-1 confidence-bar"><div class="confidence-fill bg-[#22c55e]" style="width:99%"></div></div>
+                                <span class="text-xs text-[#22c55e] w-10 text-right">99%</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-[#94a3b8] w-32">QA/QC Results</span>
+                                <div class="flex-1 confidence-bar"><div class="confidence-fill bg-[#fbbf24]" style="width:82%"></div></div>
+                                <span class="text-xs text-[#fbbf24] w-10 text-right">82%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ai-card">
+                        <h3 class="text-sm font-semibold text-white mb-4">Confidence by Inspector</h3>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="text-center p-4 bg-[#0d1f35] rounded-lg">
+                                <div class="w-12 h-12 rounded-full bg-[#ea580c] flex items-center justify-center text-white font-bold mx-auto mb-2">JK</div>
+                                <div class="text-sm text-white">Jackson Koerner</div>
+                                <div class="text-2xl font-bold text-[#22c55e] my-1">93.2%</div>
+                                <div class="text-xs text-[#64748b]">68 reports • Voice capture</div>
+                                <div class="text-xs text-[#94a3b8] mt-1">Clear dictation, detailed notes</div>
+                            </div>
+                            <div class="text-center p-4 bg-[#0d1f35] rounded-lg">
+                                <div class="w-12 h-12 rounded-full bg-[#1e3a5f] flex items-center justify-center text-white font-bold mx-auto mb-2">JC</div>
+                                <div class="text-sm text-white">Justin Cain</div>
+                                <div class="text-2xl font-bold text-[#22c55e] my-1">91.8%</div>
+                                <div class="text-xs text-[#64748b]">52 reports • Mixed capture</div>
+                                <div class="text-xs text-[#94a3b8] mt-1">Excellent QA/QC data capture</div>
+                            </div>
+                            <div class="text-center p-4 bg-[#0d1f35] rounded-lg">
+                                <div class="w-12 h-12 rounded-full bg-[#334155] flex items-center justify-center text-white font-bold mx-auto mb-2">AS</div>
+                                <div class="text-sm text-white">Andrew Stiebing</div>
+                                <div class="text-2xl font-bold text-[#60a5fa] my-1">88.5%</div>
+                                <div class="text-xs text-[#64748b]">36 reports • Hybrid capture</div>
+                                <div class="text-xs text-[#94a3b8] mt-1">Good detail, some abbreviations</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ASK AI TAB -->
+                <div class="tab-content" id="tab-ask">
+                    <div class="ai-card glow-border" style="max-width: 800px; margin: 0 auto;">
+                        <div class="text-center mb-6">
+                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#a855f7] to-[#6366f1] flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-brain text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-white">Ask FieldVoice AI</h3>
+                            <p class="text-sm text-[#64748b]">Query your project data using natural language</p>
+                        </div>
+                        <div class="space-y-4 mb-4" id="chatHistory">
+                            <div class="flex justify-end">
+                                <div class="ai-chat-user max-w-[70%]">
+                                    <div class="text-sm text-white">How many cubic yards of concrete has Boh Bros placed on CBIS this month?</div>
+                                </div>
+                            </div>
+                            <div class="flex">
+                                <div class="ai-chat-bubble max-w-[70%]">
+                                    <div class="text-sm text-[#e2e8f0]">Based on the daily reports for June 2025, <strong>Boh Bros has placed 156 CY of Class A concrete</strong> on the CBIS Expansion project this month. This includes:</div>
+                                    <ul class="text-sm text-[#94a3b8] mt-2 ml-4 space-y-1">
+                                        <li>• June 12: 48 CY — Taxiway shoulder STA 12+50 to 14+00</li>
+                                        <li>• June 10: 12 CY — Headwall at DS-4 (STA 6+75) [cross-project]</li>
+                                        <li>• June 6: 52 CY — Taxiway apron section</li>
+                                        <li>• June 3: 44 CY — Shoulder prep area</li>
+                                    </ul>
+                                    <div class="text-xs text-[#64748b] mt-3"><i class="fas fa-database mr-1"></i>Source: 8 daily reports with concrete activities</div>
+                                </div>
+                            </div>
+                            <div class="flex justify-end">
+                                <div class="ai-chat-user max-w-[70%]">
+                                    <div class="text-sm text-white">What's the status of the storm drain work on North-South Connector?</div>
+                                </div>
+                            </div>
+                            <div class="flex">
+                                <div class="ai-chat-bubble max-w-[70%]">
+                                    <div class="text-sm text-[#e2e8f0]"><strong>Storm Drain Status — N-S Connector Phase 2:</strong></div>
+                                    <div class="text-sm text-[#94a3b8] mt-2 space-y-2">
+                                        <div>📍 <strong>Current progress:</strong> STA 8+25 to STA 10+50 (active installation today)</div>
+                                        <div>📏 <strong>Total installed:</strong> ~1,450 LF of 24" RCP Class III</div>
+                                        <div>🏗️ <strong>Contractor:</strong> Kass Brothers (6-man crew today, understaffed vs plan)</div>
+                                        <div>🔧 <strong>Structures complete:</strong> MH-1, MH-2, MH-3, Headwall DS-4</div>
+                                        <div>⏳ <strong>Remaining:</strong> ~550 LF pipe + DS-5 headwall + MH-4, MH-5</div>
+                                        <div>📅 <strong>Projected completion:</strong> ~June 28 at current production rate</div>
+                                    </div>
+                                    <div class="text-xs text-[#64748b] mt-3"><i class="fas fa-database mr-1"></i>Source: 15 daily reports referencing storm drain activities</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="text" placeholder="Ask about projects, contractors, quantities, schedules..." class="flex-1 bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-4 py-3 text-sm text-white placeholder-[#64748b] focus:outline-none focus:border-[#a855f7]" id="aiInput" onkeypress="if(event.key==='Enter')askAI()">
+                            <button class="bg-gradient-to-r from-[#a855f7] to-[#6366f1] text-white px-5 py-3 rounded-lg transition hover:opacity-90" onclick="askAI()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <div class="flex gap-2 mt-3 flex-wrap">
+                            <button class="text-xs bg-[#1e3a5f] text-[#94a3b8] px-3 py-1.5 rounded-lg hover:text-[#f59e0b] transition" onclick="document.getElementById('aiInput').value='Which contractors had the most workers on site this week?';askAI()">Contractor headcount this week?</button>
+                            <button class="text-xs bg-[#1e3a5f] text-[#94a3b8] px-3 py-1.5 rounded-lg hover:text-[#f59e0b] transition" onclick="document.getElementById('aiInput').value='Were there any QA/QC failures this month?';askAI()">Any QA/QC failures?</button>
+                            <button class="text-xs bg-[#1e3a5f] text-[#94a3b8] px-3 py-1.5 rounded-lg hover:text-[#f59e0b] transition" onclick="document.getElementById('aiInput').value='How many rain days have we had this month?';askAI()">Rain days this month?</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI MEMORY TAB -->
+                <div class="tab-content" id="tab-memory">
+                    <div class="grid grid-cols-2 gap-5">
+                        <div class="ai-card">
+                            <h3 class="text-sm font-semibold text-white mb-4"><i class="fas fa-brain text-[#a855f7] mr-2"></i>N-S Connector Memory</h3>
+                            <div class="text-xs text-[#64748b] mb-3">68 reports ingested • Last updated 2 min ago</div>
+                            <div class="space-y-2">
+                                <div class="text-xs text-[#94a3b8] font-semibold">Retained Context:</div>
+                                <div>
+                                    <span class="memory-tag">STA 0+00 to 22+00</span>
+                                    <span class="memory-tag">24" RCP Class III</span>
+                                    <span class="memory-tag">Kass Brothers understaffed</span>
+                                    <span class="memory-tag">95% Modified Proctor</span>
+                                    <span class="memory-tag">Class A 4000 PSI</span>
+                                    <span class="memory-tag">Terminal Dr traffic control</span>
+                                    <span class="memory-tag">DS-4 headwall complete</span>
+                                    <span class="memory-tag">MH-1 through MH-3 done</span>
+                                    <span class="memory-tag">3 loads rejected (moisture)</span>
+                                    <span class="memory-tag">Cat 320 excavator primary</span>
+                                    <span class="memory-tag">Airport ops coordination</span>
+                                    <span class="memory-tag">Afternoon storm pattern</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ai-card">
+                            <h3 class="text-sm font-semibold text-white mb-4"><i class="fas fa-brain text-[#60a5fa] mr-2"></i>CBIS Expansion Memory</h3>
+                            <div class="text-xs text-[#64748b] mb-3">52 reports ingested • Last updated 15 min ago</div>
+                            <div class="space-y-2">
+                                <div class="text-xs text-[#94a3b8] font-semibold">Retained Context:</div>
+                                <div>
+                                    <span class="memory-tag">Taxiway shoulder concrete</span>
+                                    <span class="memory-tag">STA 12+50 to 14+00</span>
+                                    <span class="memory-tag">4" PVC 6-way duct bank</span>
+                                    <span class="memory-tag">FAA outage window 10PM-4AM</span>
+                                    <span class="memory-tag">#5 bars @ 12" OC</span>
+                                    <span class="memory-tag">Broom finish perpendicular</span>
+                                    <span class="memory-tag">Slump spec 3"-5"</span>
+                                    <span class="memory-tag">Air content 5-7%</span>
+                                    <span class="memory-tag">JB-12 installed</span>
+                                    <span class="memory-tag">Fire line relocation</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ai-card">
+                            <h3 class="text-sm font-semibold text-white mb-4"><i class="fas fa-brain text-[#22c55e] mr-2"></i>Express Shuttle Memory</h3>
+                            <div class="text-xs text-[#64748b] mb-3">36 reports ingested • Last updated 1 day ago</div>
+                            <div class="space-y-2">
+                                <div class="text-xs text-[#94a3b8] font-semibold">Retained Context:</div>
+                                <div>
+                                    <span class="memory-tag">Lime treatment 50 lbs/SY</span>
+                                    <span class="memory-tag">95% Standard Proctor min</span>
+                                    <span class="memory-tag">Wetland buffer constraint</span>
+                                    <span class="memory-tag">8" DIP water main</span>
+                                    <span class="memory-tag">Peterson coordination issues</span>
+                                    <span class="memory-tag">SWPPP compliance</span>
+                                    <span class="memory-tag">STA 0+00 to 8+00 cleared</span>
+                                    <span class="memory-tag">Silt fence + inlet protection</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ai-card">
+                            <h3 class="text-sm font-semibold text-white mb-4"><i class="fas fa-brain text-[#f59e0b] mr-2"></i>Cross-Project Intelligence</h3>
+                            <div class="text-xs text-[#64748b] mb-3">Patterns across all projects</div>
+                            <div class="space-y-2">
+                                <div class="text-xs text-[#94a3b8] font-semibold">Learned Patterns:</div>
+                                <div>
+                                    <span class="memory-tag">Afternoon thunderstorms ≥2PM</span>
+                                    <span class="memory-tag">Concrete pours best before noon</span>
+                                    <span class="memory-tag">Mon/Fri lower crew counts</span>
+                                    <span class="memory-tag">Boh Bros = reliable delivery</span>
+                                    <span class="memory-tag">Peterson = needs supervision</span>
+                                    <span class="memory-tag">CEMEX typical supplier</span>
+                                    <span class="memory-tag">Airport ops gate procedures</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONFIG TAB -->
+                <div class="tab-content" id="tab-config">
+                    <div class="max-w-2xl">
+                        <div class="ai-card mb-5">
+                            <h3 class="text-sm font-semibold text-white mb-4"><i class="fas fa-sliders text-[#f59e0b] mr-2"></i>AI Data Sources</h3>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between py-2 border-b border-[#1e3a5f]">
+                                    <div><div class="text-sm text-white">Daily Field Reports</div><div class="text-xs text-[#64748b]">Voice, text, and hybrid captures</div></div>
+                                    <div class="config-toggle on" onclick="this.classList.toggle('on')"></div>
+                                </div>
+                                <div class="flex items-center justify-between py-2 border-b border-[#1e3a5f]">
+                                    <div><div class="text-sm text-white">Photo Metadata & Geotags</div><div class="text-xs text-[#64748b]">GPS coordinates, timestamps, headings</div></div>
+                                    <div class="config-toggle on" onclick="this.classList.toggle('on')"></div>
+                                </div>
+                                <div class="flex items-center justify-between py-2 border-b border-[#1e3a5f]">
+                                    <div><div class="text-sm text-white">Delivery Records</div><div class="text-xs text-[#64748b]">Material tickets, quantities, vendors</div></div>
+                                    <div class="config-toggle on" onclick="this.classList.toggle('on')"></div>
+                                </div>
+                                <div class="flex items-center justify-between py-2 border-b border-[#1e3a5f]">
+                                    <div><div class="text-sm text-white">Weather Data</div><div class="text-xs text-[#64748b]">Hourly conditions from NWS API</div></div>
+                                    <div class="config-toggle on" onclick="this.classList.toggle('on')"></div>
+                                </div>
+                                <div class="flex items-center justify-between py-2 border-b border-[#1e3a5f]">
+                                    <div><div class="text-sm text-white">Message History</div><div class="text-xs text-[#64748b]">Field-office communications</div></div>
+                                    <div class="config-toggle" onclick="this.classList.toggle('on')"></div>
+                                </div>
+                                <div class="flex items-center justify-between py-2">
+                                    <div><div class="text-sm text-white">Calendar Events</div><div class="text-xs text-[#64748b]">Scheduled pours, inspections, deliveries</div></div>
+                                    <div class="config-toggle on" onclick="this.classList.toggle('on')"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ai-card">
+                            <h3 class="text-sm font-semibold text-white mb-4"><i class="fas fa-cog text-[#f59e0b] mr-2"></i>AI Processing Settings</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="text-sm text-[#94a3b8] block mb-1">Refinement Model</label>
+                                    <select class="w-full bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+                                        <option>GPT-4o (Default — Best quality)</option>
+                                        <option>GPT-4o-mini (Faster, lower cost)</option>
+                                        <option>Claude 3.5 Sonnet</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-[#94a3b8] block mb-1">Auto-refinement</label>
+                                    <select class="w-full bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+                                        <option>Immediate — refine on submission</option>
+                                        <option>Batch — refine every 30 minutes</option>
+                                        <option>Manual — require approval</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-[#94a3b8] block mb-1">Minimum Confidence Threshold</label>
+                                    <div class="flex items-center gap-3">
+                                        <input type="range" min="50" max="99" value="80" class="flex-1">
+                                        <span class="text-sm text-white font-mono">80%</span>
+                                    </div>
+                                    <div class="text-xs text-[#64748b] mt-1">Reports below this threshold will be flagged for human review</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-nav button').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.closest('button').classList.add('active');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+        }
+
+        function askAI() {
+            const input = document.getElementById('aiInput');
+            const q = input.value.trim();
+            if (!q) return;
+
+            const chat = document.getElementById('chatHistory');
+            chat.innerHTML += `<div class="flex justify-end"><div class="ai-chat-user max-w-[70%]"><div class="text-sm text-white">${q}</div></div></div>`;
+
+            // Simulated typing
+            const typingId = 'typing-' + Date.now();
+            chat.innerHTML += `<div class="flex" id="${typingId}"><div class="ai-chat-bubble"><div class="text-sm text-[#94a3b8]"><span class="typing-dot">●</span> <span class="typing-dot">●</span> <span class="typing-dot">●</span></div></div></div>`;
+            chat.scrollTop = chat.scrollHeight;
+
+            setTimeout(() => {
+                const responses = [
+                    'Based on the field reports, I found relevant data across multiple projects. The information has been cross-referenced with delivery records and QA/QC test results for accuracy. Would you like me to drill deeper into any specific aspect?',
+                    'I\'ve analyzed the data from the last 30 days of reports. Key finding: production rates are trending positively across all three projects, with the N-S Connector showing the strongest improvement. The primary constraint remains Kass Brothers\' crew staffing on storm drain operations.',
+                    'Looking at the historical data, I can provide detailed breakdowns by contractor, work type, or time period. The AI memory system has accumulated context from 156 reports, 247 geotagged photos, and 15 delivery records to provide comprehensive project intelligence.'
+                ];
+                const resp = responses[Math.floor(Math.random() * responses.length)];
+                document.getElementById(typingId).innerHTML = `<div class="ai-chat-bubble max-w-[70%]"><div class="text-sm text-[#e2e8f0]">${resp}</div><div class="text-xs text-[#64748b] mt-2"><i class="fas fa-database mr-1"></i>Source: Cross-project analysis</div></div>`;
+                chat.scrollTop = chat.scrollHeight;
+            }, 1500);
+
+            input.value = '';
+        }
+    </script>
+</body>
+</html>

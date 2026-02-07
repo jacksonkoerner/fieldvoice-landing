@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FieldVoice Pro — Report Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --dot-navy: #0a1628; --dot-blue: #1e3a5f; --dot-slate: #334155; --dot-orange: #ea580c; --dot-yellow: #f59e0b; --safety-green: #16a34a; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1d32; color: #e2e8f0; margin: 0; }
+        .safety-stripe { height: 6px; background: repeating-linear-gradient(-45deg, #f59e0b, #f59e0b 10px, #0a1628 10px, #0a1628 20px); }
+        .sidebar { width: 260px; min-height: 100vh; background: #0a1628; border-right: 1px solid #1e3a5f; transition: width 0.3s; }
+        .sidebar.collapsed { width: 72px; }
+        .sidebar.collapsed .nav-text, .sidebar.collapsed .brand-text, .sidebar.collapsed .sidebar-section-label { display: none; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 12px 0; }
+        .sidebar.collapsed .nav-item i { margin-right: 0; }
+        .nav-item { display: flex; align-items: center; padding: 10px 20px; color: #94a3b8; text-decoration: none; border-radius: 8px; margin: 2px 12px; transition: all 0.2s; font-size: 0.9rem; }
+        .nav-item:hover { background: #1e3a5f; color: #f59e0b; }
+        .nav-item.active { background: #1e3a5f; color: #f59e0b; border-left: 3px solid #f59e0b; }
+        .nav-item i { width: 20px; margin-right: 12px; text-align: center; }
+        .sidebar-section-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: #475569; padding: 16px 20px 4px; }
+        .badge { padding: 2px 10px; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
+        .badge-draft { background: rgba(100,116,139,0.3); color: #94a3b8; }
+        .badge-refined { background: rgba(59,130,246,0.2); color: #60a5fa; }
+        .badge-submitted { background: rgba(22,163,74,0.2); color: #22c55e; }
+        .badge-pending { background: rgba(245,158,11,0.2); color: #fbbf24; }
+        .report-row { background: #0a1628; border: 1px solid #1e3a5f; border-radius: 10px; padding: 16px 20px; cursor: pointer; transition: all 0.2s; }
+        .report-row:hover { border-color: #f59e0b; transform: translateX(4px); }
+        .report-detail { display: none; background: #0d1829; border: 1px solid #1e3a5f; border-radius: 0 0 10px 10px; margin-top: -1px; padding: 20px; }
+        .report-detail.active { display: block; }
+        .filter-btn { padding: 6px 16px; border-radius: 8px; font-size: 0.8rem; border: 1px solid #1e3a5f; background: transparent; color: #94a3b8; cursor: pointer; transition: all 0.2s; }
+        .filter-btn:hover, .filter-btn.active { background: #1e3a5f; color: #f59e0b; border-color: #f59e0b; }
+        .tab-btn { padding: 8px 16px; border-radius: 8px 8px 0 0; font-size: 0.85rem; background: transparent; color: #64748b; cursor: pointer; border: 1px solid transparent; border-bottom: none; }
+        .tab-btn.active { background: #0d1829; color: #f59e0b; border-color: #1e3a5f; }
+        .side-by-side { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .capture-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 6px; }
+        .capture-voice { background: rgba(234,88,12,0.2); color: #fb923c; }
+        .capture-text { background: rgba(59,130,246,0.2); color: #60a5fa; }
+        .capture-hybrid { background: rgba(168,85,247,0.2); color: #c084fc; }
+    </style>
+</head>
+<body>
+    <div class="safety-stripe"></div>
+    <div class="flex">
+        <!-- Sidebar -->
+        <nav class="sidebar flex flex-col" id="sidebar">
+            <div class="p-5 flex items-center justify-between border-b border-[#1e3a5f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-gradient-to-br from-[#ea580c] to-[#f59e0b] rounded-lg flex items-center justify-center">
+                        <i class="fas fa-microphone-lines text-white text-sm"></i>
+                    </div>
+                    <div class="brand-text">
+                        <div class="text-sm font-bold text-white leading-tight">FieldVoice</div>
+                        <div class="text-xs text-[#f59e0b] font-semibold">PRO ADMIN</div>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('sidebar').classList.toggle('collapsed')" class="text-[#64748b] hover:text-[#f59e0b] transition"><i class="fas fa-bars"></i></button>
+            </div>
+            <div class="flex-1 py-4">
+                <div class="sidebar-section-label">Main</div>
+                <a href="index.html" class="nav-item"><i class="fas fa-gauge-high"></i><span class="nav-text">Command Center</span></a>
+                <a href="reports.html" class="nav-item active"><i class="fas fa-file-lines"></i><span class="nav-text">Reports</span></a>
+                <a href="messages.html" class="nav-item"><i class="fas fa-comments"></i><span class="nav-text">Messages</span></a>
+                <a href="photos.html" class="nav-item"><i class="fas fa-camera"></i><span class="nav-text">Photos</span></a>
+                <a href="maps.html" class="nav-item"><i class="fas fa-map-location-dot"></i><span class="nav-text">Job Site Maps</span></a>
+                <div class="sidebar-section-label">Operations</div>
+                <a href="deliveries.html" class="nav-item"><i class="fas fa-truck"></i><span class="nav-text">Deliveries</span></a>
+                <a href="calendar.html" class="nav-item"><i class="fas fa-calendar-days"></i><span class="nav-text">Calendar</span></a>
+                <div class="sidebar-section-label">Intelligence</div>
+                <a href="ai-insights.html" class="nav-item"><i class="fas fa-brain"></i><span class="nav-text">AI Insights</span></a>
+                <a href="users.html" class="nav-item"><i class="fas fa-users-gear"></i><span class="nav-text">Users</span></a>
+            </div>
+            <div class="p-4 border-t border-[#1e3a5f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-[#ea580c] flex items-center justify-center text-white text-sm font-bold">JK</div>
+                    <div class="nav-text"><div class="text-xs font-medium text-white">Jackson Koerner</div><div class="text-xs text-[#64748b]">Admin</div></div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-auto" style="max-height: calc(100vh - 6px);">
+            <div class="flex items-center justify-between px-8 py-4 border-b border-[#1e3a5f] bg-[#0a1628]/50">
+                <div>
+                    <h1 class="text-xl font-bold text-white"><i class="fas fa-file-lines text-[#f59e0b] mr-2"></i>Report Center</h1>
+                    <p class="text-sm text-[#64748b]">All field reports across projects</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <input type="text" placeholder="Search reports..." class="bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-4 py-2 text-sm text-white placeholder-[#64748b] w-64 focus:outline-none focus:border-[#f59e0b]" id="searchInput" oninput="filterReports()">
+                        <i class="fas fa-search absolute right-3 top-2.5 text-[#64748b] text-sm"></i>
+                    </div>
+                    <button class="bg-[#ea580c] hover:bg-[#dc2626] text-white px-4 py-2 rounded-lg text-sm font-medium transition"><i class="fas fa-download mr-2"></i>Export All</button>
+                </div>
+            </div>
+
+            <div class="p-8">
+                <!-- Stats Bar -->
+                <div class="grid grid-cols-5 gap-4 mb-6">
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-white">156</div>
+                        <div class="text-xs text-[#64748b]">Total Reports</div>
+                    </div>
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-[#22c55e]">128</div>
+                        <div class="text-xs text-[#64748b]">Submitted</div>
+                    </div>
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-[#60a5fa]">18</div>
+                        <div class="text-xs text-[#64748b]">AI Refined</div>
+                    </div>
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-[#fbbf24]">6</div>
+                        <div class="text-xs text-[#64748b]">Pending Review</div>
+                    </div>
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-[#94a3b8]">4</div>
+                        <div class="text-xs text-[#64748b]">Drafts</div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="flex items-center gap-3 mb-6 flex-wrap">
+                    <span class="text-sm text-[#64748b]">Filter:</span>
+                    <button class="filter-btn active" onclick="setFilter(this, 'all')">All Reports</button>
+                    <button class="filter-btn" onclick="setFilter(this, 'submitted')">Submitted</button>
+                    <button class="filter-btn" onclick="setFilter(this, 'refined')">AI Refined</button>
+                    <button class="filter-btn" onclick="setFilter(this, 'pending')">Pending</button>
+                    <button class="filter-btn" onclick="setFilter(this, 'draft')">Drafts</button>
+                    <div class="ml-auto flex items-center gap-2">
+                        <select class="bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none" id="projectFilter" onchange="filterReports()">
+                            <option value="">All Projects</option>
+                            <option value="nsc">N-S Connector Phase 2</option>
+                            <option value="cbis">CBIS Expansion</option>
+                            <option value="esc">Express Shuttle Connector</option>
+                        </select>
+                        <select class="bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none" id="inspectorFilter" onchange="filterReports()">
+                            <option value="">All Inspectors</option>
+                            <option value="jk">Jackson Koerner</option>
+                            <option value="jc">Justin Cain</option>
+                            <option value="as">Andrew Stiebing</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Reports List -->
+                <div class="space-y-3" id="reportsList">
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const reports = [
+            {
+                id: 'RPT-2025-0612-001', date: '2025-06-12', project: 'North-South Connector Road Phase 2', projectKey: 'nsc',
+                inspector: 'Jackson Koerner', inspectorKey: 'jk', status: 'submitted', capture: 'voice',
+                summary: 'Continued storm drain installation along STA 8+25 to STA 10+50. Kass Brothers crew of 6 on-site performing RCP pipe installation (24" Class III). Hunt Gibbs Boh Metro provided excavation support with Cat 320 excavator. Weather: clear, 87°F. No delays.',
+                fieldNotes: 'Kass brothers on site today doing storm drain work, they had about 6 guys out there. Working from station 8+25 going east. Putting in 24 inch RCP pipe, class 3. Hunt Gibbs had their Cat 320 out there digging the trench. Weather was good, hot but clear. No issues today, everything running smooth. Got about 225 feet of pipe in the ground.',
+                contractors: ['Kass Brothers — 6 workers, storm drain crew', 'Hunt Gibbs Boh Metro — 2 operators, excavation'],
+                equipment: ['Cat 320 Excavator', 'Volvo A30G Articulated Hauler', 'Wacker Neuson Plate Compactor'],
+                quantities: '225 LF of 24" RCP Class III installed', photos: 4, aiConfidence: 94
+            },
+            {
+                id: 'RPT-2025-0612-002', date: '2025-06-12', project: 'CBIS Expansion', projectKey: 'cbis',
+                inspector: 'Justin Cain', inspectorKey: 'jc', status: 'refined', capture: 'voice',
+                summary: 'Concrete pour for taxiway shoulder STA 12+50 to STA 14+00. Boh Bros placed 48 CY of Class A concrete (4000 PSI). Frischhertz Electric on-site relocating conduit bank. QA/QC: Slump tests within spec (4.5"), air content 5.8%. All tickets verified.',
+                fieldNotes: 'Big pour day on CBIS. Boh Bros had their crew out doing the taxiway shoulder concrete from 12+50 to 14+00. Put down about 48 yards of class A, 4000 PSI mix. Slump was good, tested at 4 and a half inches. Air content came in at 5.8 percent. Frischhertz was there too working on moving the conduit bank out of the way. Got all the tickets, everything looked good.',
+                contractors: ['Boh Bros — 8 workers, concrete crew', 'Frischhertz Electric — 3 workers, conduit relocation'],
+                equipment: ['Concrete pump truck', 'Vibrating screed', 'Power trowels (2)'],
+                quantities: '48 CY Class A Concrete (4000 PSI)', photos: 6, aiConfidence: 97
+            },
+            {
+                id: 'RPT-2025-0612-003', date: '2025-06-12', project: 'Express Shuttle Connector Road', projectKey: 'esc',
+                inspector: 'Andrew Stiebing', inspectorKey: 'as', status: 'pending', capture: 'hybrid',
+                summary: 'Subgrade preparation and lime treatment STA 0+00 to STA 4+50. Peterson Plumbing installing 8" water main relocation. Lime spread rate verified at 50 lbs/SY. Compaction testing: 96.2% Standard Proctor.',
+                fieldNotes: 'Express shuttle work today. Subgrade prep from the start of the project to about station 4+50. Spreading lime for treatment, checked the rate and its 50 pounds per square yard. Compaction came back at 96.2 percent standard proctor which is good. Peterson plumbing was also out there moving the 8 inch water main. Had some coordination issues early but got it sorted.',
+                contractors: ['Hunt Gibbs Boh Metro — 5 workers, earthwork crew', 'Peterson Plumbing — 4 workers, utility relocation'],
+                equipment: ['Cat D6 Dozer', 'Hamm 3410 Roller', 'Lime spreader truck'],
+                quantities: '4,500 SY lime treatment @ 50 lbs/SY', photos: 3, aiConfidence: 91
+            },
+            {
+                id: 'RPT-2025-0611-001', date: '2025-06-11', project: 'North-South Connector Road Phase 2', projectKey: 'nsc',
+                inspector: 'Jackson Koerner', inspectorKey: 'jk', status: 'submitted', capture: 'voice',
+                summary: 'Embankment fill operations STA 15+00 to STA 18+00. Hunt Gibbs Boh Metro hauling and placing select fill material. 3 loads rejected due to excessive moisture content. Compaction tests: 95.8% modified proctor (spec: 95% min). Kass Brothers standby for storm drain continuation tomorrow.',
+                fieldNotes: 'Mostly fill work today on the north-south connector. Hunt Gibbs bringing in select fill from station 15 to 18. Had to reject 3 loads, too wet. Compaction came back at 95.8 modified proctor so we are good there. Kass brothers will be back tomorrow to keep going on storm drain.',
+                contractors: ['Hunt Gibbs Boh Metro — 4 operators, 3 laborers, earthwork'],
+                equipment: ['Cat 740 ADT (3)', 'Cat D6 Dozer', 'Bomag BW211D Roller'],
+                quantities: '1,200 CY select fill placed', photos: 2, aiConfidence: 92
+            },
+            {
+                id: 'RPT-2025-0611-002', date: '2025-06-11', project: 'CBIS Expansion', projectKey: 'cbis',
+                inspector: 'Justin Cain', inspectorKey: 'jc', status: 'submitted', capture: 'text',
+                summary: 'Form work setup for taxiway shoulder pour scheduled 6/12. Boh Bros setting steel forms STA 12+50 to 14+00. Rebar placement verified — #5 bars @ 12" OC both ways, dowels drilled and epoxied into existing pavement. DOT inspector performed pre-pour review — approved with no comments.',
+                fieldNotes: 'Setup day for tomorrow\'s pour. Boh Bros getting forms in place for the taxiway shoulder 12+50 to 14+00. Rebar is in, number 5 bars at 12 inches on center both directions. Dowels are drilled and epoxied into the existing pavement. DOT came out for pre-pour check and gave thumbs up, no issues.',
+                contractors: ['Boh Bros — 6 workers, form/steel crew'],
+                equipment: ['Rebar bender', 'Hilti TE 70 hammer drill', 'Laser level'],
+                quantities: '150 LF steel forms set, 2,400 SF rebar placed', photos: 5, aiConfidence: 89
+            },
+            {
+                id: 'RPT-2025-0611-003', date: '2025-06-11', project: 'Express Shuttle Connector Road', projectKey: 'esc',
+                inspector: 'Andrew Stiebing', inspectorKey: 'as', status: 'submitted', capture: 'voice',
+                summary: 'Clearing and grubbing STA 4+50 to STA 8+00. Tree removal complete in ROW. Environmental monitor confirmed no impacts to wetland buffer. Erosion control measures installed — silt fence and inlet protection. Survey crew staked centerline and offsets.',
+                fieldNotes: 'Clearing work continuing on express shuttle, went from 4+50 out to 8+00. Got all the trees down in the right of way. Environmental guy was out and confirmed we are not hitting the wetland buffer. Put up silt fence and inlet protection. Survey crew came through and staked the centerline.',
+                contractors: ['Hunt Gibbs Boh Metro — 6 workers, clearing crew'],
+                equipment: ['Cat 330 Excavator w/ shear', 'Brush chipper', 'Skid steer'],
+                quantities: '3.5 AC cleared and grubbed, 1,200 LF silt fence', photos: 3, aiConfidence: 93
+            },
+            {
+                id: 'RPT-2025-0610-001', date: '2025-06-10', project: 'North-South Connector Road Phase 2', projectKey: 'nsc',
+                inspector: 'Jackson Koerner', inspectorKey: 'jk', status: 'submitted', capture: 'voice',
+                summary: 'Concrete headwall construction at drainage structure DS-4 (STA 6+75). Boh Bros formed and poured 12 CY Class A concrete. Kass Brothers completed manhole MH-3 installation with precast rings. Traffic control adjusted for lane closure on Terminal Dr.',
+                fieldNotes: 'Headwall pour today at DS-4, station 6+75. Boh Bros put 12 yards of class A in the headwall. Looks good. Kass brothers finished up manhole 3, using the precast rings. Had to adjust traffic control for the lane closure on Terminal Drive, worked with airport ops on that.',
+                contractors: ['Boh Bros — 4 workers, concrete crew', 'Kass Brothers — 3 workers, drainage structures'],
+                equipment: ['Concrete truck', 'Boom truck', 'Vibrators'],
+                quantities: '12 CY headwall concrete, 1 EA precast manhole', photos: 5, aiConfidence: 96
+            },
+            {
+                id: 'RPT-2025-0610-002', date: '2025-06-10', project: 'CBIS Expansion', projectKey: 'cbis',
+                inspector: 'Justin Cain', inspectorKey: 'jc', status: 'submitted', capture: 'hybrid',
+                summary: 'Electrical duct bank installation Segment E-3. Frischhertz Electric trenching and laying 4" PVC conduit (6-way). Peterson Plumbing completed fire line relocation. Coordination with FAA on lighting circuit outage — approved window 10 PM to 4 AM.',
+                fieldNotes: 'Duct bank work on segment E-3 today. Frischhertz trenching and laying the 4 inch PVC, 6-way configuration. Peterson finished up the fire line relocation. Had to coordinate with FAA about the lighting circuit — they approved an outage window tonight 10 PM to 4 AM.',
+                contractors: ['Frischhertz Electric — 5 workers, electrical crew', 'Peterson Plumbing — 3 workers, fire protection'],
+                equipment: ['Ditch Witch RT80', 'Mini excavator', 'Conduit bender'],
+                quantities: '320 LF 4" PVC conduit (6-way), 1 EA fire line connection', photos: 4, aiConfidence: 90
+            },
+            {
+                id: 'RPT-2025-0609-001', date: '2025-06-09', project: 'North-South Connector Road Phase 2', projectKey: 'nsc',
+                inspector: 'Jackson Koerner', inspectorKey: 'jk', status: 'submitted', capture: 'voice',
+                summary: 'Rain day — work suspended at 10:45 AM due to thunderstorms. 1.3" rainfall recorded by 2 PM. Kass Brothers had begun storm drain work at STA 7+00 before suspension. Erosion controls checked and holding. Pumping required at trench excavation. Work to resume 6/10 pending conditions.',
+                fieldNotes: 'Rained out today. Kass brothers got started on storm drain at station 7 but had to stop at 10:45 when the storms rolled in. Got about an inch and a third of rain by 2 PM. Checked all the erosion control, everything holding. Going to need to pump the trench tomorrow before we can get back in. Hopefully dry enough to work tomorrow.',
+                contractors: ['Kass Brothers — 4 workers, departed at 10:45 AM'],
+                equipment: ['Standby only — 2" trash pump deployed for dewatering'],
+                quantities: 'No production — rain day', photos: 2, aiConfidence: 88
+            },
+            {
+                id: 'RPT-2025-0609-002', date: '2025-06-09', project: 'CBIS Expansion', projectKey: 'cbis',
+                inspector: 'Justin Cain', inspectorKey: 'jc', status: 'draft', capture: 'text',
+                summary: '[DRAFT] Partial day — AM work on electrical conduit routing before rain shutdown. Frischhertz completed junction box JB-12 installation.',
+                fieldNotes: 'Quick morning before the rain. Frischhertz got junction box 12 installed before we had to shut down.',
+                contractors: ['Frischhertz Electric — 4 workers'],
+                equipment: ['Mini excavator'],
+                quantities: '1 EA junction box installed', photos: 1, aiConfidence: 72
+            },
+        ];
+
+        let currentFilter = 'all';
+
+        function setFilter(btn, filter) {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = filter;
+            filterReports();
+        }
+
+        function filterReports() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const projectFilter = document.getElementById('projectFilter').value;
+            const inspectorFilter = document.getElementById('inspectorFilter').value;
+
+            const filtered = reports.filter(r => {
+                if (currentFilter !== 'all' && r.status !== currentFilter) return false;
+                if (projectFilter && r.projectKey !== projectFilter) return false;
+                if (inspectorFilter && r.inspectorKey !== inspectorFilter) return false;
+                if (search && !JSON.stringify(r).toLowerCase().includes(search)) return false;
+                return true;
+            });
+
+            renderReports(filtered);
+        }
+
+        function renderReports(list) {
+            const container = document.getElementById('reportsList');
+            container.innerHTML = list.map((r, i) => `
+                <div class="report-row" onclick="toggleDetail(${i})">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="text-xs font-mono text-[#64748b]">${r.id}</div>
+                            <div>
+                                <div class="text-sm font-medium text-white">${r.project}</div>
+                                <div class="text-xs text-[#64748b]">${r.inspector} • ${formatDate(r.date)}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="capture-badge capture-${r.capture}"><i class="fas fa-${r.capture === 'voice' ? 'microphone' : r.capture === 'text' ? 'keyboard' : 'wand-magic-sparkles'} mr-1"></i>${r.capture}</span>
+                            <span class="badge badge-${r.status}">${r.status.charAt(0).toUpperCase() + r.status.slice(1)}</span>
+                            <div class="text-xs text-[#64748b]"><i class="fas fa-camera mr-1"></i>${r.photos}</div>
+                            <div class="flex items-center gap-1 text-xs ${r.aiConfidence >= 90 ? 'text-[#22c55e]' : r.aiConfidence >= 80 ? 'text-[#fbbf24]' : 'text-[#fb923c]'}">
+                                <i class="fas fa-brain"></i>${r.aiConfidence}%
+                            </div>
+                            <i class="fas fa-chevron-down text-[#64748b] text-sm transition-transform" id="chevron-${i}"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="report-detail" id="detail-${i}">
+                    <div class="mb-4">
+                        <div class="flex gap-2 mb-3">
+                            <button class="tab-btn active" onclick="showTab(${i}, 'summary')">Summary</button>
+                            <button class="tab-btn" onclick="showTab(${i}, 'sidebyside')">AI Side-by-Side</button>
+                            <button class="tab-btn" onclick="showTab(${i}, 'data')">Details</button>
+                        </div>
+                    </div>
+                    <div id="tab-summary-${i}">
+                        <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 mb-4">
+                            <h4 class="text-sm font-semibold text-[#f59e0b] mb-2"><i class="fas fa-file-alt mr-1"></i>Executive Summary</h4>
+                            <p class="text-sm text-[#cbd5e1] leading-relaxed">${r.summary}</p>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4">
+                                <h4 class="text-xs font-semibold text-[#f59e0b] mb-2"><i class="fas fa-users-gear mr-1"></i>Contractors</h4>
+                                ${r.contractors.map(c => `<div class="text-xs text-[#94a3b8] mb-1">• ${c}</div>`).join('')}
+                            </div>
+                            <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4">
+                                <h4 class="text-xs font-semibold text-[#f59e0b] mb-2"><i class="fas fa-truck-monster mr-1"></i>Equipment</h4>
+                                ${r.equipment.map(e => `<div class="text-xs text-[#94a3b8] mb-1">• ${e}</div>`).join('')}
+                            </div>
+                            <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4">
+                                <h4 class="text-xs font-semibold text-[#f59e0b] mb-2"><i class="fas fa-calculator mr-1"></i>Quantities</h4>
+                                <div class="text-xs text-[#94a3b8]">${r.quantities}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tab-sidebyside-${i}" style="display:none;">
+                        <div class="side-by-side">
+                            <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4">
+                                <h4 class="text-xs font-semibold text-[#fb923c] mb-2"><i class="fas fa-microphone mr-1"></i>Original Field Notes</h4>
+                                <p class="text-sm text-[#94a3b8] leading-relaxed italic">"${r.fieldNotes}"</p>
+                            </div>
+                            <div class="bg-[#0a1628] border border-[#22c55e]/30 rounded-lg p-4">
+                                <h4 class="text-xs font-semibold text-[#22c55e] mb-2"><i class="fas fa-brain mr-1"></i>AI Refined Output <span class="badge badge-green ml-2">${r.aiConfidence}% confidence</span></h4>
+                                <p class="text-sm text-[#cbd5e1] leading-relaxed">${r.summary}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tab-data-${i}" style="display:none;">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-sm">
+                                <div class="grid grid-cols-2 gap-y-2">
+                                    <div class="text-[#64748b]">Report ID:</div><div class="text-white">${r.id}</div>
+                                    <div class="text-[#64748b]">Date:</div><div class="text-white">${formatDate(r.date)}</div>
+                                    <div class="text-[#64748b]">Inspector:</div><div class="text-white">${r.inspector}</div>
+                                    <div class="text-[#64748b]">Project:</div><div class="text-white">${r.project}</div>
+                                    <div class="text-[#64748b]">Capture Mode:</div><div class="text-white capitalize">${r.capture}</div>
+                                    <div class="text-[#64748b]">AI Confidence:</div><div class="text-white">${r.aiConfidence}%</div>
+                                    <div class="text-[#64748b]">Photos:</div><div class="text-white">${r.photos}</div>
+                                    <div class="text-[#64748b]">Status:</div><div class="text-white capitalize">${r.status}</div>
+                                </div>
+                            </div>
+                            <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 flex flex-col items-center justify-center">
+                                <i class="fas fa-file-pdf text-4xl text-[#ea580c] mb-3"></i>
+                                <div class="text-sm text-white mb-2">DOT Daily Report PDF</div>
+                                <button class="bg-[#1e3a5f] hover:bg-[#ea580c] text-white px-4 py-2 rounded-lg text-sm transition" onclick="alert('PDF download would start for ${r.id}')">
+                                    <i class="fas fa-download mr-1"></i>Download PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-2 mt-4">
+                        <button class="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white px-3 py-1.5 rounded-lg text-xs transition" onclick="alert('Approve report ${r.id}')"><i class="fas fa-check mr-1"></i>Approve</button>
+                        <button class="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white px-3 py-1.5 rounded-lg text-xs transition" onclick="alert('Request revision for ${r.id}')"><i class="fas fa-pen mr-1"></i>Request Revision</button>
+                        <button class="bg-[#ea580c] hover:bg-[#dc2626] text-white px-3 py-1.5 rounded-lg text-xs transition" onclick="alert('Export ${r.id} as PDF')"><i class="fas fa-file-pdf mr-1"></i>Export PDF</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleDetail(i) {
+            const detail = document.getElementById(`detail-${i}`);
+            const chevron = document.getElementById(`chevron-${i}`);
+            if (detail.classList.contains('active')) {
+                detail.classList.remove('active');
+                chevron.style.transform = '';
+            } else {
+                detail.classList.add('active');
+                chevron.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        function showTab(i, tab) {
+            ['summary', 'sidebyside', 'data'].forEach(t => {
+                const el = document.getElementById(`tab-${t}-${i}`);
+                if (el) el.style.display = t === tab ? 'block' : 'none';
+            });
+            const detail = document.getElementById(`detail-${i}`);
+            detail.querySelectorAll('.tab-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', ['summary', 'sidebyside', 'data'][idx] === tab);
+            });
+        }
+
+        function formatDate(d) {
+            return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        renderReports(reports);
+    </script>
+</body>
+</html>

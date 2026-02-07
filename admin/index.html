@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FieldVoice Pro — Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --dot-navy: #0a1628;
+            --dot-blue: #1e3a5f;
+            --dot-slate: #334155;
+            --dot-orange: #ea580c;
+            --dot-yellow: #f59e0b;
+            --safety-green: #16a34a;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1d32; color: #e2e8f0; margin: 0; }
+        .safety-stripe { height: 6px; background: repeating-linear-gradient(-45deg, #f59e0b, #f59e0b 10px, #0a1628 10px, #0a1628 20px); }
+        .sidebar { width: 260px; min-height: 100vh; background: #0a1628; border-right: 1px solid #1e3a5f; transition: width 0.3s; }
+        .sidebar.collapsed { width: 72px; }
+        .sidebar.collapsed .nav-text, .sidebar.collapsed .brand-text, .sidebar.collapsed .sidebar-section-label { display: none; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 12px 0; }
+        .sidebar.collapsed .nav-item i { margin-right: 0; font-size: 1.2rem; }
+        .nav-item { display: flex; align-items: center; padding: 10px 20px; color: #94a3b8; text-decoration: none; border-radius: 8px; margin: 2px 12px; transition: all 0.2s; font-size: 0.9rem; }
+        .nav-item:hover { background: #1e3a5f; color: #f59e0b; }
+        .nav-item.active { background: #1e3a5f; color: #f59e0b; border-left: 3px solid #f59e0b; }
+        .nav-item i { width: 20px; margin-right: 12px; text-align: center; }
+        .kpi-card { background: linear-gradient(135deg, #1e3a5f 0%, #0a1628 100%); border: 1px solid #2d4a6f; border-radius: 12px; padding: 20px; }
+        .kpi-card:hover { border-color: #f59e0b; transform: translateY(-2px); transition: all 0.2s; }
+        .activity-item { border-left: 3px solid #1e3a5f; padding: 8px 16px; margin: 8px 0; background: rgba(30,58,95,0.3); border-radius: 0 8px 8px 0; }
+        .activity-item:hover { border-left-color: #f59e0b; }
+        .quick-action { background: linear-gradient(135deg, #1e3a5f, #0a1628); border: 1px solid #2d4a6f; border-radius: 10px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .quick-action:hover { border-color: #f59e0b; transform: translateY(-2px); }
+        .badge { padding: 2px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-green { background: rgba(22,163,74,0.2); color: #22c55e; }
+        .badge-orange { background: rgba(234,88,12,0.2); color: #fb923c; }
+        .badge-blue { background: rgba(30,58,95,0.5); color: #60a5fa; }
+        .badge-yellow { background: rgba(245,158,11,0.2); color: #fbbf24; }
+        .mini-cal-day { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.8rem; cursor: pointer; }
+        .mini-cal-day:hover { background: #1e3a5f; }
+        .mini-cal-day.today { background: #ea580c; color: white; font-weight: 700; }
+        .mini-cal-day.has-event { position: relative; }
+        .mini-cal-day.has-event::after { content: ''; position: absolute; bottom: 3px; width: 4px; height: 4px; background: #f59e0b; border-radius: 50%; }
+        #map { height: 300px; border-radius: 12px; border: 1px solid #2d4a6f; }
+        .weather-card { background: linear-gradient(135deg, #1e3a5f, #162d4a); border: 1px solid #2d4a6f; border-radius: 12px; padding: 16px; }
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .sidebar-section-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: #475569; padding: 16px 20px 4px; }
+    </style>
+</head>
+<body>
+    <div class="safety-stripe"></div>
+    <div class="flex">
+        <!-- Sidebar -->
+        <nav class="sidebar flex flex-col" id="sidebar">
+            <div class="p-5 flex items-center justify-between border-b border-[#1e3a5f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-gradient-to-br from-[#ea580c] to-[#f59e0b] rounded-lg flex items-center justify-center">
+                        <i class="fas fa-microphone-lines text-white text-sm"></i>
+                    </div>
+                    <div class="brand-text">
+                        <div class="text-sm font-bold text-white leading-tight">FieldVoice</div>
+                        <div class="text-xs text-[#f59e0b] font-semibold">PRO ADMIN</div>
+                    </div>
+                </div>
+                <button onclick="toggleSidebar()" class="text-[#64748b] hover:text-[#f59e0b] transition">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            <div class="flex-1 py-4">
+                <div class="sidebar-section-label">Main</div>
+                <a href="index.html" class="nav-item active"><i class="fas fa-gauge-high"></i><span class="nav-text">Command Center</span></a>
+                <a href="reports.html" class="nav-item"><i class="fas fa-file-lines"></i><span class="nav-text">Reports</span></a>
+                <a href="messages.html" class="nav-item"><i class="fas fa-comments"></i><span class="nav-text">Messages</span></a>
+                <a href="photos.html" class="nav-item"><i class="fas fa-camera"></i><span class="nav-text">Photos</span></a>
+                <a href="maps.html" class="nav-item"><i class="fas fa-map-location-dot"></i><span class="nav-text">Job Site Maps</span></a>
+                <div class="sidebar-section-label">Operations</div>
+                <a href="deliveries.html" class="nav-item"><i class="fas fa-truck"></i><span class="nav-text">Deliveries</span></a>
+                <a href="calendar.html" class="nav-item"><i class="fas fa-calendar-days"></i><span class="nav-text">Calendar</span></a>
+                <div class="sidebar-section-label">Intelligence</div>
+                <a href="ai-insights.html" class="nav-item"><i class="fas fa-brain"></i><span class="nav-text">AI Insights</span></a>
+                <a href="users.html" class="nav-item"><i class="fas fa-users-gear"></i><span class="nav-text">Users</span></a>
+            </div>
+            <div class="p-4 border-t border-[#1e3a5f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-[#ea580c] flex items-center justify-center text-white text-sm font-bold">JK</div>
+                    <div class="nav-text">
+                        <div class="text-xs font-medium text-white">Jackson Koerner</div>
+                        <div class="text-xs text-[#64748b]">Admin</div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-auto" style="max-height: calc(100vh - 6px);">
+            <!-- Top Bar -->
+            <div class="flex items-center justify-between px-8 py-4 border-b border-[#1e3a5f] bg-[#0a1628]/50">
+                <div>
+                    <h1 class="text-xl font-bold text-white">Command Center</h1>
+                    <p class="text-sm text-[#64748b]" id="currentDateTime"></p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 text-sm text-[#22c55e]">
+                        <span class="w-2 h-2 bg-[#22c55e] rounded-full pulse"></span>
+                        System Online
+                    </div>
+                    <button class="relative p-2 text-[#64748b] hover:text-[#f59e0b] transition">
+                        <i class="fas fa-bell text-lg"></i>
+                        <span class="absolute -top-1 -right-1 w-5 h-5 bg-[#ea580c] rounded-full text-xs text-white flex items-center justify-center">3</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-8 space-y-6">
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-4 gap-5">
+                    <div class="kpi-card">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-[#64748b] text-sm">Active Projects</span>
+                            <div class="w-10 h-10 rounded-lg bg-[#1e3a5f] flex items-center justify-center">
+                                <i class="fas fa-hard-hat text-[#f59e0b]"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-white">3</div>
+                        <div class="text-xs text-[#22c55e] mt-1"><i class="fas fa-arrow-up mr-1"></i>All active</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-[#64748b] text-sm">Reports Today</span>
+                            <div class="w-10 h-10 rounded-lg bg-[#1e3a5f] flex items-center justify-center">
+                                <i class="fas fa-file-lines text-[#60a5fa]"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-white">7</div>
+                        <div class="text-xs text-[#22c55e] mt-1"><i class="fas fa-arrow-up mr-1"></i>+2 from yesterday</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-[#64748b] text-sm">Pending Reviews</span>
+                            <div class="w-10 h-10 rounded-lg bg-[#1e3a5f] flex items-center justify-center">
+                                <i class="fas fa-clock text-[#fb923c]"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-white">4</div>
+                        <div class="text-xs text-[#fb923c] mt-1"><i class="fas fa-exclamation-triangle mr-1"></i>2 urgent</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-[#64748b] text-sm">Field Users Online</span>
+                            <div class="w-10 h-10 rounded-lg bg-[#1e3a5f] flex items-center justify-center">
+                                <i class="fas fa-users text-[#22c55e]"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-white">2<span class="text-lg text-[#64748b]">/3</span></div>
+                        <div class="text-xs text-[#22c55e] mt-1"><i class="fas fa-signal mr-1"></i>2 active now</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-6">
+                    <!-- Activity Feed - takes 2 cols -->
+                    <div class="col-span-2 space-y-6">
+                        <!-- Quick Actions -->
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="quick-action" onclick="window.location.href='messages.html'">
+                                <i class="fas fa-paper-plane text-[#60a5fa] text-xl mb-2"></i>
+                                <div class="text-sm font-medium text-white">Message Field</div>
+                                <div class="text-xs text-[#64748b]">Send to inspectors</div>
+                            </div>
+                            <div class="quick-action" onclick="window.location.href='calendar.html'">
+                                <i class="fas fa-calendar-plus text-[#a78bfa] text-xl mb-2"></i>
+                                <div class="text-sm font-medium text-white">Create Event</div>
+                                <div class="text-xs text-[#64748b]">Schedule activity</div>
+                            </div>
+                            <div class="quick-action" onclick="window.location.href='deliveries.html'">
+                                <i class="fas fa-truck-fast text-[#22c55e] text-xl mb-2"></i>
+                                <div class="text-sm font-medium text-white">New Delivery</div>
+                                <div class="text-xs text-[#64748b]">Track shipment</div>
+                            </div>
+                        </div>
+
+                        <!-- Activity Feed -->
+                        <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-xl p-5">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-lg font-semibold text-white"><i class="fas fa-bolt text-[#f59e0b] mr-2"></i>Live Activity</h2>
+                                <span class="badge badge-green"><i class="fas fa-circle text-xs mr-1 pulse"></i>Live</span>
+                            </div>
+                            <div class="space-y-1" id="activityFeed">
+                                <div class="activity-item">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <span class="badge badge-blue">Report</span>
+                                            <span class="text-sm text-white">Jackson Koerner submitted daily report</span>
+                                        </div>
+                                        <span class="text-xs text-[#64748b]">2 min ago</span>
+                                    </div>
+                                    <div class="text-xs text-[#64748b] mt-1">North-South Connector Road Phase 2 — AI refined, 94% confidence</div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <span class="badge badge-green">Photo</span>
+                                            <span class="text-sm text-white">Justin Cain uploaded 4 photos</span>
+                                        </div>
+                                        <span class="text-xs text-[#64748b]">8 min ago</span>
+                                    </div>
+                                    <div class="text-xs text-[#64748b] mt-1">CBIS Expansion — Concrete pour STA 12+50 to 14+00</div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <span class="badge badge-orange">AI</span>
+                                            <span class="text-sm text-white">AI refinement completed</span>
+                                        </div>
+                                        <span class="text-xs text-[#64748b]">15 min ago</span>
+                                    </div>
+                                    <div class="text-xs text-[#64748b] mt-1">Express Shuttle Connector — Report #247 processed, contractors extracted</div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <span class="badge badge-yellow">Delivery</span>
+                                            <span class="text-sm text-white">Concrete delivery arrived</span>
+                                        </div>
+                                        <span class="text-xs text-[#64748b]">23 min ago</span>
+                                    </div>
+                                    <div class="text-xs text-[#64748b] mt-1">Boh Bros — 8 CY Class A concrete, Ticket #4521</div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <span class="badge badge-blue">Report</span>
+                                            <span class="text-sm text-white">Andrew Stiebing started field capture</span>
+                                        </div>
+                                        <span class="text-xs text-[#64748b]">31 min ago</span>
+                                    </div>
+                                    <div class="text-xs text-[#64748b] mt-1">CBIS Expansion — Voice capture mode active</div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <span class="badge badge-green">Photo</span>
+                                            <span class="text-sm text-white">Jackson Koerner uploaded 2 photos</span>
+                                        </div>
+                                        <span class="text-xs text-[#64748b]">45 min ago</span>
+                                    </div>
+                                    <div class="text-xs text-[#64748b] mt-1">North-South Connector — Storm drain installation STA 8+25</div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <span class="badge badge-orange">Alert</span>
+                                            <span class="text-sm text-white">Weather advisory issued</span>
+                                        </div>
+                                        <span class="text-xs text-[#64748b]">1 hr ago</span>
+                                    </div>
+                                    <div class="text-xs text-[#64748b] mt-1">30% chance of thunderstorms after 2:00 PM — may affect afternoon pours</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Map -->
+                        <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-xl p-5">
+                            <h2 class="text-lg font-semibold text-white mb-4"><i class="fas fa-map-location-dot text-[#f59e0b] mr-2"></i>Active Project Locations</h2>
+                            <div id="map"></div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div class="space-y-6">
+                        <!-- Weather -->
+                        <div class="weather-card">
+                            <h3 class="text-sm font-semibold text-white mb-3"><i class="fas fa-cloud-sun text-[#f59e0b] mr-2"></i>Weather — New Orleans MSY</h3>
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="text-4xl font-bold text-white">87°</div>
+                                <div>
+                                    <div class="text-sm text-[#94a3b8]">Partly Cloudy</div>
+                                    <div class="text-xs text-[#64748b]">Humidity: 72%</div>
+                                    <div class="text-xs text-[#64748b]">Wind: 8 mph SE</div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-4 gap-2 text-center border-t border-[#1e3a5f] pt-3">
+                                <div>
+                                    <div class="text-xs text-[#64748b]">10 AM</div>
+                                    <div class="text-sm">☀️ 84°</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-[#64748b]">12 PM</div>
+                                    <div class="text-sm">⛅ 89°</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-[#64748b]">2 PM</div>
+                                    <div class="text-sm">🌦️ 91°</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-[#64748b]">4 PM</div>
+                                    <div class="text-sm">⛈️ 85°</div>
+                                </div>
+                            </div>
+                            <div class="mt-3 p-2 bg-[#7c2d12]/30 rounded-lg text-xs text-[#fb923c]">
+                                <i class="fas fa-triangle-exclamation mr-1"></i> Thunderstorm watch after 2 PM — plan pours accordingly
+                            </div>
+                        </div>
+
+                        <!-- Mini Calendar -->
+                        <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-xl p-5">
+                            <h3 class="text-sm font-semibold text-white mb-3"><i class="fas fa-calendar text-[#f59e0b] mr-2"></i>June 2025</h3>
+                            <div class="grid grid-cols-7 gap-1 text-center text-xs text-[#64748b] mb-2">
+                                <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+                            </div>
+                            <div class="grid grid-cols-7 gap-1 text-center" id="miniCalendar"></div>
+                            <div class="mt-3 space-y-2">
+                                <div class="flex items-center gap-2 text-xs">
+                                    <span class="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
+                                    <span class="text-[#94a3b8]">Concrete Pour — NSC Phase 2, STA 22+00</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-xs">
+                                    <span class="w-2 h-2 rounded-full bg-[#fb923c]"></span>
+                                    <span class="text-[#94a3b8]">DOT Inspection — CBIS Expansion</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-xs">
+                                    <span class="w-2 h-2 rounded-full bg-[#22c55e]"></span>
+                                    <span class="text-[#94a3b8]">Rebar Delivery — Express Shuttle</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Online Inspectors -->
+                        <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-xl p-5">
+                            <h3 class="text-sm font-semibold text-white mb-3"><i class="fas fa-users text-[#f59e0b] mr-2"></i>Field Team</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="relative">
+                                        <div class="w-9 h-9 rounded-full bg-[#ea580c] flex items-center justify-center text-white text-sm font-bold">JK</div>
+                                        <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#22c55e] border-2 border-[#0a1628] rounded-full"></span>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm text-white">Jackson Koerner</div>
+                                        <div class="text-xs text-[#64748b]">N-S Connector • Capturing</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="relative">
+                                        <div class="w-9 h-9 rounded-full bg-[#1e3a5f] flex items-center justify-center text-white text-sm font-bold">JC</div>
+                                        <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#22c55e] border-2 border-[#0a1628] rounded-full"></span>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm text-white">Justin Cain</div>
+                                        <div class="text-xs text-[#64748b]">CBIS Expansion • Photos</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="relative">
+                                        <div class="w-9 h-9 rounded-full bg-[#334155] flex items-center justify-center text-white text-sm font-bold">AS</div>
+                                        <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#64748b] border-2 border-[#0a1628] rounded-full"></span>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm text-white">Andrew Stiebing</div>
+                                        <div class="text-xs text-[#64748b]">Offline • Last seen 2h ago</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Project Status -->
+                        <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-xl p-5">
+                            <h3 class="text-sm font-semibold text-white mb-3"><i class="fas fa-clipboard-list text-[#f59e0b] mr-2"></i>Projects Status</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <div class="flex items-center justify-between text-sm mb-1">
+                                        <span class="text-[#94a3b8]">N-S Connector Phase 2</span>
+                                        <span class="text-[#f59e0b]">67%</span>
+                                    </div>
+                                    <div class="w-full bg-[#1e3a5f] rounded-full h-2">
+                                        <div class="bg-gradient-to-r from-[#ea580c] to-[#f59e0b] h-2 rounded-full" style="width: 67%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex items-center justify-between text-sm mb-1">
+                                        <span class="text-[#94a3b8]">CBIS Expansion</span>
+                                        <span class="text-[#f59e0b]">43%</span>
+                                    </div>
+                                    <div class="w-full bg-[#1e3a5f] rounded-full h-2">
+                                        <div class="bg-gradient-to-r from-[#ea580c] to-[#f59e0b] h-2 rounded-full" style="width: 43%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex items-center justify-between text-sm mb-1">
+                                        <span class="text-[#94a3b8]">Express Shuttle Connector</span>
+                                        <span class="text-[#f59e0b]">28%</span>
+                                    </div>
+                                    <div class="w-full bg-[#1e3a5f] rounded-full h-2">
+                                        <div class="bg-gradient-to-r from-[#ea580c] to-[#f59e0b] h-2 rounded-full" style="width: 28%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        }
+
+        // Date/Time
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('currentDateTime').textContent = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' • ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+        updateDateTime();
+        setInterval(updateDateTime, 60000);
+
+        // Mini Calendar
+        (function() {
+            const now = new Date();
+            const year = now.getFullYear(), month = now.getMonth();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = now.getDate();
+            const eventDays = [3, 5, 8, 12, 15, 17, 19, 22, 24, 26, 28];
+            const cal = document.getElementById('miniCalendar');
+            let html = '';
+            for (let i = 0; i < firstDay; i++) html += '<div class="mini-cal-day text-[#1e3a5f]"></div>';
+            for (let d = 1; d <= daysInMonth; d++) {
+                const isToday = d === today;
+                const hasEvent = eventDays.includes(d);
+                html += `<div class="mini-cal-day ${isToday ? 'today' : ''} ${hasEvent ? 'has-event' : ''} text-[#94a3b8]">${d}</div>`;
+            }
+            cal.innerHTML = html;
+        })();
+
+        // Map
+        const map = L.map('map', { zoomControl: false }).setView([29.9934, -90.258], 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap © CARTO'
+        }).addTo(map);
+
+        const orangeIcon = L.divIcon({ className: '', html: '<div style="background:#ea580c;width:14px;height:14px;border-radius:50%;border:3px solid #f59e0b;box-shadow:0 0 8px rgba(234,88,12,0.6)"></div>', iconSize: [14, 14] });
+
+        L.marker([29.9934, -90.258], { icon: orangeIcon }).addTo(map).bindPopup('<b>North-South Connector Road Phase 2</b><br>RPR: Jackson Koerner<br>Status: Active');
+        L.marker([29.988, -90.252], { icon: orangeIcon }).addTo(map).bindPopup('<b>CBIS Expansion</b><br>RPR: Justin Cain<br>Status: Active');
+        L.marker([29.996, -90.265], { icon: orangeIcon }).addTo(map).bindPopup('<b>Express Shuttle Connector Road</b><br>RPR: Andrew Stiebing<br>Status: Active');
+    </script>
+</body>
+</html>

@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Demo — FieldVoice Pro</title>
+    <meta name="description" content="Try FieldVoice Pro yourself. Interactive demo of the mobile app and admin dashboard.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030712;
+            --bg2: #0a0f1a;
+            --accent: #f97316;
+            --accent2: #fb923c;
+            --green: #10b981;
+            --blue: #3b82f6;
+            --red: #ef4444;
+            --white: #f8fafc;
+            --gray: #94a3b8;
+            --gray2: #64748b;
+            --dim: #1e293b;
+            --border: rgba(148,163,184,0.08);
+            --glow: rgba(249,115,22,0.12);
+        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        html{scroll-behavior:smooth}
+        body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--white);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+        .container{max-width:1200px;margin:0 auto;padding:0 24px}
+
+        /* ===== NAV ===== */
+        .nav{position:fixed;top:0;width:100%;z-index:100;padding:0 24px;transition:all .3s;background:rgba(3,7,18,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+        .nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:72px}
+        .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--white);font-weight:800;font-size:1.25rem}
+        .nav-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),#ea580c);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+        .nav-links{display:none;gap:32px;align-items:center}
+        .nav-links a{color:var(--gray);text-decoration:none;font-size:.9rem;font-weight:500;transition:color .2s}
+        .nav-links a:hover,.nav-links a.active{color:var(--white)}
+        .nav-cta{background:var(--accent);color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:.9rem;transition:all .2s}
+        .nav-cta:hover{transform:translateY(-1px);box-shadow:0 8px 25px rgba(249,115,22,.35)}
+        .mobile-menu-btn{display:flex;flex-direction:column;gap:5px;cursor:pointer;padding:8px;background:none;border:none}
+        .mobile-menu-btn span{display:block;width:22px;height:2px;background:var(--gray);border-radius:2px}
+        @media(min-width:768px){.nav-links{display:flex}.mobile-menu-btn{display:none}}
+        .mobile-menu{position:fixed;top:72px;left:0;right:0;background:rgba(3,7,18,0.97);backdrop-filter:blur(20px);padding:24px;display:none;flex-direction:column;gap:16px;border-bottom:1px solid var(--border);z-index:99}
+        .mobile-menu.open{display:flex}
+        .mobile-menu a{color:var(--gray);text-decoration:none;font-size:1rem;font-weight:500;padding:8px 0}
+
+        /* ===== SHARED ===== */
+        .sec-pad{padding:120px 0}
+        .sec-header{text-align:center;max-width:700px;margin:0 auto 64px}
+        .sec-label{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:700;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;margin-bottom:16px}
+        .sec-header h2{font-size:clamp(2rem,4vw,3.2rem);font-weight:800;line-height:1.1;letter-spacing:-.02em;margin-bottom:16px}
+        .sec-header p{color:var(--gray);font-size:1.1rem;line-height:1.7}
+        .highlight-text{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .hazard-stripe{height:4px;background:repeating-linear-gradient(-45deg,var(--accent),var(--accent) 6px,#1e293b 6px,#1e293b 12px);width:60px;border-radius:2px;margin:0 auto 20px}
+        .btn{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:10px;font-weight:700;font-size:1rem;text-decoration:none;transition:all .25s;border:none;cursor:pointer}
+        .btn-accent{background:var(--accent);color:#fff;box-shadow:0 4px 20px rgba(249,115,22,.25)}
+        .btn-accent:hover{transform:translateY(-2px);box-shadow:0 12px 35px rgba(249,115,22,.35)}
+        .btn-ghost{background:rgba(255,255,255,.04);color:var(--white);border:1px solid rgba(255,255,255,.1)}
+        .btn-ghost:hover{background:rgba(255,255,255,.08)}
+        .reveal{opacity:0;transform:translateY(28px);transition:all .7s cubic-bezier(.4,0,.2,1)}
+        .reveal.visible{opacity:1;transform:translateY(0)}
+
+        /* ===== HERO ===== */
+        .demo-hero{padding:120px 0 60px;text-align:center;position:relative;overflow:hidden}
+        .demo-hero::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:800px;height:400px;background:radial-gradient(ellipse,rgba(249,115,22,.08),transparent 70%);pointer-events:none}
+        .demo-hero h1{font-size:clamp(2.5rem,5vw,4rem);font-weight:900;margin-bottom:16px;letter-spacing:-.03em}
+        .demo-hero p{color:var(--gray);font-size:1.15rem;max-width:600px;margin:0 auto 8px;line-height:1.7}
+
+        /* ===== MOBILE APP DEMO ===== */
+        .app-demo-section{position:relative}
+        .app-demo-layout{display:flex;gap:40px;align-items:flex-start;justify-content:center;max-width:1100px;margin:0 auto}
+        @media(max-width:900px){.app-demo-layout{flex-direction:column;align-items:center}}
+
+        /* Phone frame */
+        .demo-phone{position:relative;flex-shrink:0}
+        .demo-phone-frame{width:375px;height:750px;background:linear-gradient(160deg,#111827,#0a0f1a);border-radius:48px;border:4px solid rgba(255,255,255,.08);box-shadow:0 60px 120px rgba(0,0,0,.6),0 0 100px rgba(249,115,22,.04),inset 0 0 0 1px rgba(255,255,255,.03);position:relative;overflow:hidden}
+        .demo-phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:130px;height:30px;background:#000;border-radius:0 0 18px 18px;z-index:5}
+        .demo-phone-screen{position:absolute;inset:4px;border-radius:44px;overflow:hidden;background:#000}
+        .demo-phone-screen iframe{width:100%;height:100%;border:none;border-radius:44px}
+        .demo-phone-home{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:120px;height:4px;background:rgba(255,255,255,.15);border-radius:3px}
+
+        /* Glow ring under phone */
+        .demo-phone::after{content:'';position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);width:200px;height:40px;background:radial-gradient(ellipse,rgba(249,115,22,.15),transparent 70%);filter:blur(20px);pointer-events:none}
+
+        /* Step sidebar */
+        .demo-steps{width:280px;display:flex;flex-direction:column;gap:0;position:sticky;top:100px}
+        @media(max-width:900px){.demo-steps{width:100%;flex-direction:row;overflow-x:auto;gap:0;position:static;padding-bottom:12px;-webkit-overflow-scrolling:touch}.demo-steps::-webkit-scrollbar{display:none}}
+
+        .demo-step{padding:16px 20px;border-left:3px solid var(--border);cursor:pointer;transition:all .3s;position:relative}
+        @media(max-width:900px){.demo-step{border-left:none;border-bottom:3px solid var(--border);white-space:nowrap;flex-shrink:0;padding:12px 16px}}
+        .demo-step.active{border-left-color:var(--accent);background:rgba(249,115,22,.04)}
+        @media(max-width:900px){.demo-step.active{border-bottom-color:var(--accent);border-left-color:transparent}}
+        .demo-step-num{font-size:.7rem;font-weight:700;color:var(--accent);letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
+        .demo-step-title{font-size:.95rem;font-weight:700;margin-bottom:4px}
+        .demo-step-desc{font-size:.8rem;color:var(--gray);line-height:1.5}
+        @media(max-width:900px){.demo-step-desc{display:none}}
+        .demo-step:hover{background:rgba(255,255,255,.02)}
+        .demo-step.active .demo-step-title{color:var(--accent)}
+
+        /* Contextual tooltip */
+        .demo-tooltip{position:absolute;left:calc(100% + 24px);top:50%;transform:translateY(-50%);background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);border-radius:12px;padding:14px 18px;font-size:.82rem;color:var(--accent2);max-width:220px;line-height:1.5;pointer-events:none;opacity:0;transition:opacity .3s;backdrop-filter:blur(10px)}
+        .demo-step.active .demo-tooltip{opacity:1}
+        @media(max-width:900px){.demo-tooltip{display:none}}
+
+        /* ===== ADMIN DEMO ===== */
+        .admin-demo-section{background:linear-gradient(180deg,rgba(249,115,22,.02),transparent)}
+        .browser-mockup{max-width:1100px;margin:0 auto;border-radius:16px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06);background:#111827}
+        .browser-topbar{display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(180deg,#1e293b,#18212f);border-bottom:1px solid rgba(255,255,255,.06)}
+        .browser-dots{display:flex;gap:7px}
+        .browser-dots span{width:12px;height:12px;border-radius:50%;display:block}
+        .browser-dots span:nth-child(1){background:#ef4444}
+        .browser-dots span:nth-child(2){background:#f59e0b}
+        .browser-dots span:nth-child(3){background:#10b981}
+        .browser-url{flex:1;background:rgba(255,255,255,.06);border-radius:6px;padding:7px 14px;font-size:.78rem;color:var(--gray2);display:flex;align-items:center;gap:8px;margin:0 8px}
+        .browser-url .lock-icon{color:var(--green);font-size:.7rem}
+        .browser-tabs{display:flex;gap:0;margin-right:auto}
+        .browser-tab{padding:6px 16px;font-size:.75rem;color:var(--gray2);border-radius:6px 6px 0 0;cursor:pointer;transition:all .2s;font-weight:500}
+        .browser-tab.active{background:rgba(255,255,255,.06);color:var(--white)}
+        .browser-tab:hover{color:var(--white)}
+        .browser-body{height:650px;position:relative;overflow:hidden}
+        .browser-body iframe{width:100%;height:100%;border:none}
+        .browser-body .loading-overlay{position:absolute;inset:0;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:2;transition:opacity .5s}
+        .browser-body .loading-overlay.hidden{opacity:0;pointer-events:none}
+        .loading-spinner{width:40px;height:40px;border:3px solid rgba(249,115,22,.15);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+
+        /* Admin feature bar */
+        .admin-nav{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:32px}
+        .admin-nav-item{display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid var(--border);font-size:.85rem;font-weight:600;color:var(--gray);cursor:pointer;transition:all .3s;text-decoration:none}
+        .admin-nav-item:hover,.admin-nav-item.active{border-color:rgba(249,115,22,.2);color:var(--accent);background:rgba(249,115,22,.04)}
+
+        /* ===== CTA ===== */
+        .cta{text-align:center;padding:120px 24px;position:relative;overflow:hidden}
+        .cta-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:var(--accent);filter:blur(200px);opacity:.06;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+        .cta h2{font-size:clamp(2rem,5vw,3rem);font-weight:900;margin-bottom:20px;position:relative;z-index:1}
+        .cta p{color:var(--gray);font-size:1.1rem;margin-bottom:32px;position:relative;z-index:1}
+
+        /* ===== FOOTER ===== */
+        .footer{border-top:1px solid var(--border);padding:60px 0 30px;background:rgba(0,0,0,.3)}
+        .footer-grid{display:grid;gap:40px;margin-bottom:40px}
+        @media(min-width:768px){.footer-grid{grid-template-columns:2fr 1fr 1fr 1fr}}
+        .footer-brand p{color:var(--gray);font-size:.9rem;line-height:1.7;margin-top:12px}
+        .footer-col h4{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--white);margin-bottom:16px}
+        .footer-col a{display:block;color:var(--gray);text-decoration:none;font-size:.9rem;margin-bottom:10px;transition:color .2s}
+        .footer-col a:hover{color:var(--accent)}
+        .footer-bottom{border-top:1px solid var(--border);padding-top:24px;text-align:center;color:var(--gray2);font-size:.85rem}
+
+        /* ===== MOBILE ===== */
+        @media(max-width:767px){
+            .demo-hero{padding:100px 0 40px}
+            .demo-phone-frame{width:320px;height:640px;border-radius:40px}
+            .demo-phone-screen{border-radius:36px}
+            .demo-phone-screen iframe{border-radius:36px}
+            .demo-phone-notch{width:110px;height:26px}
+            .sec-pad{padding:72px 0}
+            .sec-header{margin-bottom:40px}
+            .browser-body{height:400px}
+            .cta{padding:80px 24px}
+        }
+        @media(max-width:400px){
+            .demo-phone-frame{width:280px;height:560px;border-radius:36px}
+            .demo-phone-screen{border-radius:32px}
+            .demo-phone-screen iframe{border-radius:32px}
+        }
+
+        @media(prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01ms!important}}
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+    <div class="nav-inner">
+        <a href="index.html" class="nav-logo">
+            <div class="nav-logo-icon">🎙️</div>
+            FieldVoice Pro
+        </a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="demo.html" class="active">Demo</a>
+            <a href="tools.html">Tools</a>
+            <a href="index.html#pricing">Pricing</a>
+            <a href="#" class="nav-cta">Start Free Trial</a>
+        </div>
+        <button class="mobile-menu-btn" onclick="document.querySelector('.mobile-menu').classList.toggle('open')">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+</nav>
+<div class="mobile-menu">
+    <a href="index.html">Home</a>
+    <a href="demo.html">Demo</a>
+    <a href="tools.html">Tools</a>
+    <a href="index.html#pricing">Pricing</a>
+</div>
+
+<!-- DEMO HERO -->
+<section class="demo-hero">
+    <div class="container">
+        <div class="hazard-stripe"></div>
+        <div class="sec-label">🎮 Interactive Demo</div>
+        <h1>Try It <span class="highlight-text">Yourself</span></h1>
+        <p>Click around the actual app and admin dashboard. Everything is live and interactive.</p>
+    </div>
+</section>
+
+<!-- MOBILE APP DEMO -->
+<section class="sec-pad app-demo-section">
+    <div class="container">
+        <div class="sec-header reveal">
+            <div class="sec-label">📱 Mobile App</div>
+            <h2>The Field App</h2>
+            <p>Explore the FieldVoice Pro mobile experience. Tap through the screens — it's the real app running live.</p>
+        </div>
+
+        <div class="app-demo-layout">
+            <!-- Steps sidebar -->
+            <div class="demo-steps" id="demoSteps">
+                <div class="demo-step active" data-step="1">
+                    <div class="demo-step-num">Step 1</div>
+                    <div class="demo-step-title">Dashboard</div>
+                    <div class="demo-step-desc">Your home screen. See today's reports, project status, and quick actions.</div>
+                    <div class="demo-tooltip">👆 Start here — check today's overview</div>
+                </div>
+                <div class="demo-step" data-step="2">
+                    <div class="demo-step-num">Step 2</div>
+                    <div class="demo-step-title">Start Report</div>
+                    <div class="demo-step-desc">Tap the + button to begin a new daily report for your project.</div>
+                    <div class="demo-tooltip">Tap the orange + button in the app</div>
+                </div>
+                <div class="demo-step" data-step="3">
+                    <div class="demo-step-num">Step 3</div>
+                    <div class="demo-step-title">Choose Mode</div>
+                    <div class="demo-step-desc">Pick Quick Notes (freeform) or Guided Sections (structured categories).</div>
+                    <div class="demo-tooltip">Quick Notes = fast. Guided = thorough.</div>
+                </div>
+                <div class="demo-step" data-step="4">
+                    <div class="demo-step-num">Step 4</div>
+                    <div class="demo-step-title">Voice Capture</div>
+                    <div class="demo-step-desc">Speak your observations. Real-time transcription shows your words instantly.</div>
+                    <div class="demo-tooltip">🎙️ Speak naturally — AI handles the rest</div>
+                </div>
+                <div class="demo-step" data-step="5">
+                    <div class="demo-step-num">Step 5</div>
+                    <div class="demo-step-title">Review</div>
+                    <div class="demo-step-desc">AI refines your notes into DOT-compliant language. Review and adjust.</div>
+                    <div class="demo-tooltip">See casual talk → pro language</div>
+                </div>
+                <div class="demo-step" data-step="6">
+                    <div class="demo-step-num">Step 6</div>
+                    <div class="demo-step-title">Done ✓</div>
+                    <div class="demo-step-desc">Sign, export to PDF, and submit. Report's done before you leave the site.</div>
+                    <div class="demo-tooltip">📄 PDF ready, cloud saved</div>
+                </div>
+            </div>
+
+            <!-- Phone -->
+            <div class="demo-phone reveal">
+                <div class="demo-phone-frame">
+                    <div class="demo-phone-notch"></div>
+                    <div class="demo-phone-screen">
+                        <iframe src="app/index.html" title="FieldVoice Pro App"></iframe>
+                    </div>
+                    <div class="demo-phone-home"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ADMIN DASHBOARD DEMO -->
+<section class="sec-pad admin-demo-section" id="admin-demo">
+    <div class="container">
+        <div class="sec-header reveal">
+            <div class="sec-label">🖥️ Admin Dashboard</div>
+            <h2>The Command Center</h2>
+            <p>Full oversight of all projects, inspectors, and reports. Click through the dashboard — it's fully interactive.</p>
+        </div>
+
+        <div class="browser-mockup reveal">
+            <div class="browser-topbar">
+                <div class="browser-dots">
+                    <span></span><span></span><span></span>
+                </div>
+                <div class="browser-url">
+                    <span class="lock-icon">🔒</span>
+                    <span>app.fieldvoicepro.com/admin</span>
+                </div>
+            </div>
+            <div class="browser-body">
+                <div class="loading-overlay" id="adminLoading2">
+                    <div class="loading-spinner"></div>
+                    <span style="color:var(--gray);font-size:.85rem">Loading dashboard...</span>
+                </div>
+                <iframe src="admin/index.html" loading="lazy" onload="document.getElementById('adminLoading2').classList.add('hidden')" title="Admin Dashboard"></iframe>
+            </div>
+        </div>
+
+        <div class="admin-nav reveal">
+            <div class="admin-nav-item active"><span>📊</span> KPI Dashboard</div>
+            <div class="admin-nav-item"><span>🗺️</span> Project Map</div>
+            <div class="admin-nav-item"><span>📄</span> Reports</div>
+            <div class="admin-nav-item"><span>🧠</span> AI Insights</div>
+            <div class="admin-nav-item"><span>📅</span> Calendar</div>
+            <div class="admin-nav-item"><span>👥</span> Team</div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+    <div class="cta-glow"></div>
+    <div class="hazard-stripe"></div>
+    <h2>Ready to ditch the paperwork?</h2>
+    <p>Start your 14-day free trial. No credit card required.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1">
+        <a href="#" class="btn btn-accent">Start Free Trial <span>→</span></a>
+        <a href="index.html" class="btn btn-ghost">← Back to Home</a>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <a href="index.html" class="nav-logo">
+                    <div class="nav-logo-icon">🎙️</div>
+                    FieldVoice Pro
+                </a>
+                <p>AI-powered voice documentation for construction inspectors.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Product</h4>
+                <a href="index.html">Home</a>
+                <a href="demo.html">Demo</a>
+                <a href="tools.html">Field Tools</a>
+                <a href="index.html#pricing">Pricing</a>
+            </div>
+            <div class="footer-col">
+                <h4>Resources</h4>
+                <a href="#">Documentation</a>
+                <a href="#">Help Center</a>
+            </div>
+            <div class="footer-col">
+                <h4>Company</h4>
+                <a href="#">About</a>
+                <a href="#">Contact</a>
+                <a href="#">Privacy</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 FieldVoice Pro. Built for inspectors who'd rather be building.
+        </div>
+    </div>
+</footer>
+
+<script>
+// Step clicking
+const steps = document.querySelectorAll('.demo-step');
+steps.forEach(step => {
+    step.addEventListener('click', () => {
+        steps.forEach(s => s.classList.remove('active'));
+        step.classList.add('active');
+    });
+});
+
+// Scroll reveal
+const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible') });
+}, { threshold: .1, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+        e.preventDefault();
+        const t = document.querySelector(a.getAttribute('href'));
+        if(t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.querySelector('.mobile-menu')?.classList.remove('open');
+    });
+});
+</script>
+</body>
+</html>

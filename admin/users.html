@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FieldVoice Pro — User Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1d32; color: #e2e8f0; margin: 0; }
+        .safety-stripe { height: 6px; background: repeating-linear-gradient(-45deg, #f59e0b, #f59e0b 10px, #0a1628 10px, #0a1628 20px); }
+        .sidebar { width: 260px; min-height: 100vh; background: #0a1628; border-right: 1px solid #1e3a5f; transition: width 0.3s; }
+        .sidebar.collapsed { width: 72px; }
+        .sidebar.collapsed .nav-text, .sidebar.collapsed .brand-text, .sidebar.collapsed .sidebar-section-label { display: none; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 12px 0; }
+        .sidebar.collapsed .nav-item i { margin-right: 0; }
+        .nav-item { display: flex; align-items: center; padding: 10px 20px; color: #94a3b8; text-decoration: none; border-radius: 8px; margin: 2px 12px; transition: all 0.2s; font-size: 0.9rem; }
+        .nav-item:hover { background: #1e3a5f; color: #f59e0b; }
+        .nav-item.active { background: #1e3a5f; color: #f59e0b; border-left: 3px solid #f59e0b; }
+        .nav-item i { width: 20px; margin-right: 12px; text-align: center; }
+        .sidebar-section-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: #475569; padding: 16px 20px 4px; }
+        .user-card { background: #0a1628; border: 1px solid #1e3a5f; border-radius: 12px; padding: 24px; transition: all 0.2s; }
+        .user-card:hover { border-color: #f59e0b; }
+        .user-detail { display: none; }
+        .user-detail.active { display: block; }
+        .stat-mini { background: #0d1f35; border: 1px solid #1e3a5f; border-radius: 8px; padding: 12px; text-align: center; }
+        .badge { padding: 3px 10px; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
+        .badge-online { background: rgba(22,163,74,0.2); color: #22c55e; }
+        .badge-offline { background: rgba(100,116,139,0.3); color: #94a3b8; }
+        .report-mini { background: #0d1f35; border: 1px solid #1e3a5f; border-radius: 8px; padding: 12px; margin-bottom: 8px; transition: all 0.2s; }
+        .report-mini:hover { border-color: #2d4a6f; }
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+    <div class="safety-stripe"></div>
+    <div class="flex">
+        <nav class="sidebar flex flex-col" id="sidebar">
+            <div class="p-5 flex items-center justify-between border-b border-[#1e3a5f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-gradient-to-br from-[#ea580c] to-[#f59e0b] rounded-lg flex items-center justify-center"><i class="fas fa-microphone-lines text-white text-sm"></i></div>
+                    <div class="brand-text"><div class="text-sm font-bold text-white leading-tight">FieldVoice</div><div class="text-xs text-[#f59e0b] font-semibold">PRO ADMIN</div></div>
+                </div>
+                <button onclick="document.getElementById('sidebar').classList.toggle('collapsed')" class="text-[#64748b] hover:text-[#f59e0b] transition"><i class="fas fa-bars"></i></button>
+            </div>
+            <div class="flex-1 py-4">
+                <div class="sidebar-section-label">Main</div>
+                <a href="index.html" class="nav-item"><i class="fas fa-gauge-high"></i><span class="nav-text">Command Center</span></a>
+                <a href="reports.html" class="nav-item"><i class="fas fa-file-lines"></i><span class="nav-text">Reports</span></a>
+                <a href="messages.html" class="nav-item"><i class="fas fa-comments"></i><span class="nav-text">Messages</span></a>
+                <a href="photos.html" class="nav-item"><i class="fas fa-camera"></i><span class="nav-text">Photos</span></a>
+                <a href="maps.html" class="nav-item"><i class="fas fa-map-location-dot"></i><span class="nav-text">Job Site Maps</span></a>
+                <div class="sidebar-section-label">Operations</div>
+                <a href="deliveries.html" class="nav-item"><i class="fas fa-truck"></i><span class="nav-text">Deliveries</span></a>
+                <a href="calendar.html" class="nav-item"><i class="fas fa-calendar-days"></i><span class="nav-text">Calendar</span></a>
+                <div class="sidebar-section-label">Intelligence</div>
+                <a href="ai-insights.html" class="nav-item"><i class="fas fa-brain"></i><span class="nav-text">AI Insights</span></a>
+                <a href="users.html" class="nav-item active"><i class="fas fa-users-gear"></i><span class="nav-text">Users</span></a>
+            </div>
+            <div class="p-4 border-t border-[#1e3a5f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-[#ea580c] flex items-center justify-center text-white text-sm font-bold">JK</div>
+                    <div class="nav-text"><div class="text-xs font-medium text-white">Jackson Koerner</div><div class="text-xs text-[#64748b]">Admin</div></div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="flex-1 overflow-auto" style="max-height: calc(100vh - 6px);">
+            <div class="flex items-center justify-between px-8 py-4 border-b border-[#1e3a5f] bg-[#0a1628]/50">
+                <div>
+                    <h1 class="text-xl font-bold text-white"><i class="fas fa-users-gear text-[#f59e0b] mr-2"></i>User Management</h1>
+                    <p class="text-sm text-[#64748b]">Field inspectors and system users</p>
+                </div>
+                <button class="bg-[#ea580c] hover:bg-[#dc2626] text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                    <i class="fas fa-user-plus mr-2"></i>Add User
+                </button>
+            </div>
+
+            <div class="p-8">
+                <!-- Stats -->
+                <div class="grid grid-cols-4 gap-4 mb-6">
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-white">3</div>
+                        <div class="text-xs text-[#64748b]">Total Users</div>
+                    </div>
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-[#22c55e]">2</div>
+                        <div class="text-xs text-[#64748b]">Online Now</div>
+                    </div>
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-[#60a5fa]">156</div>
+                        <div class="text-xs text-[#64748b]">Total Reports</div>
+                    </div>
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-[#fbbf24]">247</div>
+                        <div class="text-xs text-[#64748b]">Total Photos</div>
+                    </div>
+                </div>
+
+                <!-- User Table -->
+                <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-xl overflow-hidden mb-6">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="text-left text-xs text-[#64748b] border-b border-[#1e3a5f]">
+                                <th class="px-6 py-4">User</th>
+                                <th class="px-6 py-4">Title</th>
+                                <th class="px-6 py-4">Company</th>
+                                <th class="px-6 py-4">Email</th>
+                                <th class="px-6 py-4">Phone</th>
+                                <th class="px-6 py-4">Device ID</th>
+                                <th class="px-6 py-4">Last Active</th>
+                                <th class="px-6 py-4">Reports</th>
+                                <th class="px-6 py-4">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-[#1e3a5f] hover:bg-[#0d1f35] cursor-pointer transition" onclick="toggleUserDetail('jk')">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="relative">
+                                            <div class="w-10 h-10 rounded-full bg-[#ea580c] flex items-center justify-center text-white font-bold">JK</div>
+                                            <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#22c55e] border-2 border-[#0a1628] rounded-full"></span>
+                                        </div>
+                                        <div class="text-white font-medium">Jackson Koerner</div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-[#94a3b8]">Resident Project Representative</td>
+                                <td class="px-6 py-4 text-[#94a3b8]">Ad Videre</td>
+                                <td class="px-6 py-4 text-[#94a3b8]">jackson@advidere.com</td>
+                                <td class="px-6 py-4 text-[#94a3b8]">(504) 555-0101</td>
+                                <td class="px-6 py-4 font-mono text-xs text-[#64748b]">FV-iPhone-JK-001</td>
+                                <td class="px-6 py-4 text-[#94a3b8]">2 min ago</td>
+                                <td class="px-6 py-4 text-white font-semibold">68</td>
+                                <td class="px-6 py-4"><span class="badge badge-online"><i class="fas fa-circle text-xs mr-1 pulse"></i>Online</span></td>
+                            </tr>
+                            <tr class="border-b border-[#1e3a5f] hover:bg-[#0d1f35] cursor-pointer transition" onclick="toggleUserDetail('jc')">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="relative">
+                                            <div class="w-10 h-10 rounded-full bg-[#1e3a5f] flex items-center justify-center text-white font-bold">JC</div>
+                                            <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#22c55e] border-2 border-[#0a1628] rounded-full"></span>
+                                        </div>
+                                        <div class="text-white font-medium">Justin Cain</div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-[#94a3b8]">Resident Project Representative</td>
+                                <td class="px-6 py-4 text-[#94a3b8]">Burns & McDonnell</td>
+                                <td class="px-6 py-4 text-[#94a3b8]">jcain@burnsmcd.com</td>
+                                <td class="px-6 py-4 text-[#94a3b8]">(504) 555-0202</td>
+                                <td class="px-6 py-4 font-mono text-xs text-[#64748b]">FV-iPhone-JC-002</td>
+                                <td class="px-6 py-4 text-[#94a3b8]">8 min ago</td>
+                                <td class="px-6 py-4 text-white font-semibold">52</td>
+                                <td class="px-6 py-4"><span class="badge badge-online"><i class="fas fa-circle text-xs mr-1 pulse"></i>Online</span></td>
+                            </tr>
+                            <tr class="hover:bg-[#0d1f35] cursor-pointer transition" onclick="toggleUserDetail('as')">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="relative">
+                                            <div class="w-10 h-10 rounded-full bg-[#334155] flex items-center justify-center text-white font-bold">AS</div>
+                                            <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#64748b] border-2 border-[#0a1628] rounded-full"></span>
+                                        </div>
+                                        <div class="text-white font-medium">Andrew Stiebing</div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-[#94a3b8]">Resident Project Representative</td>
+                                <td class="px-6 py-4 text-[#94a3b8]">Burns & McDonnell</td>
+                                <td class="px-6 py-4 text-[#94a3b8]">astiebing@burnsmcd.com</td>
+                                <td class="px-6 py-4 text-[#94a3b8]">(504) 555-0303</td>
+                                <td class="px-6 py-4 font-mono text-xs text-[#64748b]">FV-iPhone-AS-003</td>
+                                <td class="px-6 py-4 text-[#94a3b8]">2 hours ago</td>
+                                <td class="px-6 py-4 text-white font-semibold">36</td>
+                                <td class="px-6 py-4"><span class="badge badge-offline">Offline</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- User Detail Panels -->
+                <div class="user-detail" id="detail-jk">
+                    <div class="user-card">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 rounded-full bg-[#ea580c] flex items-center justify-center text-white text-2xl font-bold">JK</div>
+                                <div>
+                                    <div class="text-xl font-bold text-white">Jackson Koerner</div>
+                                    <div class="text-sm text-[#f59e0b]">Resident Project Representative — Ad Videre</div>
+                                    <div class="text-xs text-[#64748b] mt-1">Primary Assignment: North-South Connector Road Phase 2</div>
+                                </div>
+                            </div>
+                            <button onclick="toggleUserDetail('jk')" class="text-[#64748b] hover:text-white"><i class="fas fa-times"></i></button>
+                        </div>
+
+                        <div class="grid grid-cols-5 gap-4 mb-6">
+                            <div class="stat-mini"><div class="text-xl font-bold text-white">68</div><div class="text-xs text-[#64748b]">Reports</div></div>
+                            <div class="stat-mini"><div class="text-xl font-bold text-[#22c55e]">93.2%</div><div class="text-xs text-[#64748b]">AI Confidence</div></div>
+                            <div class="stat-mini"><div class="text-xl font-bold text-[#60a5fa]">112</div><div class="text-xs text-[#64748b]">Photos</div></div>
+                            <div class="stat-mini"><div class="text-xl font-bold text-[#fbbf24]">Voice</div><div class="text-xs text-[#64748b]">Preferred Capture</div></div>
+                            <div class="stat-mini"><div class="text-xl font-bold text-[#a855f7]">42</div><div class="text-xs text-[#64748b]">Days Active</div></div>
+                        </div>
+
+                        <h4 class="text-sm font-semibold text-[#f59e0b] mb-3">Recent Reports</h4>
+                        <div class="space-y-2">
+                            <div class="report-mini flex items-center justify-between">
+                                <div>
+                                    <div class="text-sm text-white">Storm drain installation STA 8+25 to 10+50</div>
+                                    <div class="text-xs text-[#64748b]">June 12, 2025 • N-S Connector Phase 2</div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-[#22c55e]"><i class="fas fa-brain mr-1"></i>94%</span>
+                                    <span class="badge badge-online">Submitted</span>
+                                </div>
+                            </div>
+                            <div class="report-mini flex items-center justify-between">
+                                <div>
+                                    <div class="text-sm text-white">Embankment fill operations STA 15+00 to 18+00</div>
+                                    <div class="text-xs text-[#64748b]">June 11, 2025 • N-S Connector Phase 2</div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-[#22c55e]"><i class="fas fa-brain mr-1"></i>92%</span>
+                                    <span class="badge badge-online">Submitted</span>
+                                </div>
+                            </div>
+                            <div class="report-mini flex items-center justify-between">
+                                <div>
+                                    <div class="text-sm text-white">Concrete headwall at DS-4 (STA 6+75)</div>
+                                    <div class="text-xs text-[#64748b]">June 10, 2025 • N-S Connector Phase 2</div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-[#22c55e]"><i class="fas fa-brain mr-1"></i>96%</span>
+                                    <span class="badge badge-online">Submitted</span>
+                                </div>
+                            </div>
+                            <div class="report-mini flex items-center justify-between">
+                                <div>
+                                    <div class="text-sm text-white">Rain day — work suspended at 10:45 AM</div>
+                                    <div class="text-xs text-[#64748b]">June 9, 2025 • N-S Connector Phase 2</div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-[#60a5fa]"><i class="fas fa-brain mr-1"></i>88%</span>
+                                    <span class="badge badge-online">Submitted</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="user-detail" id="detail-jc">
+                    <div class="user-card">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 rounded-full bg-[#1e3a5f] flex items-center justify-center text-white text-2xl font-bold">JC</div>
+                                <div>
+                                    <div class="text-xl font-bold text-white">Justin Cain</div>
+                                    <div class="text-sm text-[#60a5fa]">Resident Project Representative — Burns & McDonnell</div>
+                                    <div class="text-xs text-[#64748b] mt-1">Primary Assignment: CBIS Expansion</div>
+                                </div>
+                            </div>
+                            <button onclick="toggleUserDetail('jc')" class="text-[#64748b] hover:text-white"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="grid grid-cols-5 gap-4 mb-6">
+                            <div class="stat-mini"><div class="text-xl font-bold text-white">52</div><div class="text-xs text-[#64748b]">Reports</div></div>
+                            <div class="stat-mini"><div class="text-xl font-bold text-[#22c55e]">91.8%</div><div class="text-xs text-[#64748b]">AI Confidence</div></div>
+                            <div class="stat-mini"><div class="text-xl font-bold text-[#60a5fa]">89</div><div class="text-xs text-[#64748b]">Photos</div></div>
+                            <div class="stat-mini"><div class="text-xl font-bold text-[#fbbf24]">Mixed</div><div class="text-xs text-[#64748b]">Preferred Capture</div></div>
+                            <div class="stat-mini"><div class="text-xl font-bold text-[#a855f7]">38</div><div class="text-xs text-[#64748b]">Days Active</div></div>
+                        </div>
+                        <h4 class="text-sm font-semibold text-[#60a5fa] mb-3">Recent Reports</h4>
+                        <div class="space-y-2">
+                            <div class="report-mini flex items-center justify-between">
+                                <div>
+                                    <div class="text-sm text-white">Concrete pour taxiway shoulder STA 12+50 to 14+00</div>
+                                    <div class="text-xs text-[#64748b]">June 12, 2025 • CBIS Expansion</div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-[#22c55e]"><i class="fas fa-brain mr-1"></i>97%</span>
+                                    <span class="text-xs bg-[#3b82f6]/20 text-[#60a5fa] px-2 py-0.5 rounded-full">Refined</span>
+                                </div>
+                            </div>
+                            <div class="report-mini flex items-center justify-between">
+                                <div>
+                                    <div class="text-sm text-white">Form work setup for taxiway shoulder pour</div>
+                                    <div class="text-xs text-[#64748b]">June 11, 2025 • CBIS Expansion</div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-[#60a5fa]"><i class="fas fa-brain mr-1"></i>89%</span>
+                                    <span class="badge badge-online">Submitted</span>
+                                </div>
+                            </div>
+                            <div class="report-mini flex items-center justify-between">
+                                <div>
+                                    <div class="text-sm text-white">Electrical duct bank Segment E-3</div>
+                                    <div class="text-xs text-[#64748b]">June 10, 2025 • CBIS Expansion</div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-[#22c55e]"><i class="fas fa-brain mr-1"></i>90%</span>
+                                    <span class="badge badge-online">Submitted</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="user-detail" id="detail-as">
+                    <div class="user-card">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 rounded-full bg-[#334155] flex items-center justify-center text-white text-2xl font-bold">AS</div>
+                                <div>
+                                    <div class="text-xl font-bold text-white">Andrew Stiebing</div>
+                                    <div class="text-sm text-[#22c55e]">Resident Project Representative — Burns & McDonnell</div>
+                                    <div class="text-xs text-[#64748b] mt-1">Primary Assignment: Express Shuttle Connector Road</div>
+                                </div>
+                            </div>
+                            <button onclick="toggleUserDetail('as')" class="text-[#64748b] hover:text-white"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="grid grid-cols-5 gap-4 mb-6">
+                            <div class="stat-mini"><div class="text-xl font-bold text-white">36</div><div class="text-xs text-[#64748b]">Reports</div></div>
+                            <div class="stat-mini"><div class="text-xl font-bold text-[#60a5fa]">88.5%</div><div class="text-xs text-[#64748b]">AI Confidence</div></div>
+                            <div class="stat-mini"><div class="text-xl font-bold text-[#60a5fa]">46</div><div class="text-xs text-[#64748b]">Photos</div></div>
+                            <div class="stat-mini"><div class="text-xl font-bold text-[#fbbf24]">Hybrid</div><div class="text-xs text-[#64748b]">Preferred Capture</div></div>
+                            <div class="stat-mini"><div class="text-xl font-bold text-[#a855f7]">30</div><div class="text-xs text-[#64748b]">Days Active</div></div>
+                        </div>
+                        <h4 class="text-sm font-semibold text-[#22c55e] mb-3">Recent Reports</h4>
+                        <div class="space-y-2">
+                            <div class="report-mini flex items-center justify-between">
+                                <div>
+                                    <div class="text-sm text-white">Subgrade prep and lime treatment STA 0+00 to 4+50</div>
+                                    <div class="text-xs text-[#64748b]">June 12, 2025 • Express Shuttle Connector</div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-[#22c55e]"><i class="fas fa-brain mr-1"></i>91%</span>
+                                    <span class="text-xs bg-[#f59e0b]/20 text-[#fbbf24] px-2 py-0.5 rounded-full">Pending</span>
+                                </div>
+                            </div>
+                            <div class="report-mini flex items-center justify-between">
+                                <div>
+                                    <div class="text-sm text-white">Clearing and grubbing STA 4+50 to 8+00</div>
+                                    <div class="text-xs text-[#64748b]">June 11, 2025 • Express Shuttle Connector</div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-[#22c55e]"><i class="fas fa-brain mr-1"></i>93%</span>
+                                    <span class="badge badge-online">Submitted</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleUserDetail(id) {
+            const el = document.getElementById(`detail-${id}`);
+            if (el.classList.contains('active')) {
+                el.classList.remove('active');
+            } else {
+                document.querySelectorAll('.user-detail').forEach(d => d.classList.remove('active'));
+                el.classList.add('active');
+                el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+    </script>
+</body>
+</html>

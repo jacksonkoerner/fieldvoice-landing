@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Daily Field Report System</title>
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
+    <meta name="theme-color" content="#0a1628">
+
+    <!-- iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FieldVoice">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./js/config.js"></script>
+    <script src="./js/storage-keys.js"></script>
+    <script src="./js/report-rules.js"></script>
+    <script src="./js/supabase-utils.js"></script>
+    <script src="./js/sync-manager.js"></script>
+    <script src="./js/pwa-utils.js"></script>
+    <script src="./js/ui-utils.js"></script>
+    <script src="./js/indexeddb-utils.js"></script>
+    <script src="./js/data-layer.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dot-navy': '#0a1628',
+                        'dot-blue': '#1e3a5f',
+                        'dot-slate': '#334155',
+                        'dot-orange': '#ea580c',
+                        'dot-yellow': '#f59e0b',
+                        'safety-green': '#16a34a',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+        .header-stripe {
+            background: repeating-linear-gradient(
+                -45deg,
+                #f59e0b,
+                #f59e0b 10px,
+                #0a1628 10px,
+                #0a1628 20px
+            );
+            height: 4px;
+            padding-top: env(safe-area-inset-top);
+        }
+        .official-badge {
+            border: 2px solid #1e3a5f;
+            position: relative;
+        }
+        .official-badge::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border: 1px solid #1e3a5f;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+    <!-- Safety Stripe Header -->
+    <div class="header-stripe"></div>
+
+    <!-- Permissions Banner -->
+    <div id="permissionsBanner" class="hidden">
+        <div class="bg-dot-orange text-white">
+            <div class="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p class="flex-1 text-sm font-medium">System permissions required for full functionality</p>
+                <a href="permissions.html" class="px-4 py-1.5 bg-white text-dot-orange font-bold text-xs rounded">
+                    ENABLE
+                </a>
+                <button onclick="dismissPermissionsBanner()" class="text-white/80 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submitted Success Banner -->
+    <div id="submittedBanner" class="hidden bg-safety-green text-white">
+        <div class="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
+            <i class="fas fa-check-circle"></i>
+            <p class="flex-1 text-sm font-medium">Report submitted successfully</p>
+            <button onclick="dismissSubmittedBanner()" class="text-white/80 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="app" class="max-w-lg mx-auto min-h-screen flex flex-col">
+
+        <!-- HEADER -->
+        <header class="bg-dot-navy text-white p-4">
+            <div class="flex justify-between items-start">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <i class="fas fa-clipboard-check text-dot-yellow"></i>
+                        <span class="text-[10px] font-bold tracking-widest text-dot-yellow">DAILY FIELD REPORT</span>
+                    </div>
+                    <h1 class="text-xl font-bold tracking-tight">
+                        RPR INSPECTION SYSTEM
+                    </h1>
+                    <p id="currentDate" class="text-xs text-slate-400 mt-1"></p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="openProjectConfig()" class="w-10 h-10 border border-slate-600 flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" title="Manage Projects">
+                        <i class="fas fa-folder-open"></i>
+                    </button>
+                    <button onclick="openSettings()" class="w-10 h-10 border border-slate-600 flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- WEATHER STATUS CARD -->
+        <section class="px-4 mb-4">
+            <div class="bg-white border-l-4 border-dot-blue p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-cloud-sun text-dot-blue"></i>
+                        <span class="text-xs font-bold text-dot-blue uppercase tracking-wider">Weather Conditions</span>
+                    </div>
+                    <button id="syncWeatherBtn" onclick="syncWeather()" class="text-xs text-dot-blue font-bold flex items-center gap-1 hover:text-dot-navy transition-colors">
+                        <i id="syncIcon" class="fas fa-sync-alt text-[10px]"></i>
+                        SYNC
+                    </button>
+                </div>
+                <div class="grid grid-cols-4 gap-3">
+                    <div class="text-center">
+                        <i id="weatherIcon" class="fas fa-sun text-2xl text-dot-yellow mb-1"></i>
+                        <p id="weatherCondition" class="text-xs font-medium text-slate-600">Loading...</p>
+                    </div>
+                    <div class="text-center border-l border-slate-200">
+                        <p class="text-lg font-bold text-slate-800" id="weatherTempHigh">--°</p>
+                        <p class="text-[10px] text-slate-400 uppercase">High</p>
+                    </div>
+                    <div class="text-center border-l border-slate-200">
+                        <p class="text-lg font-bold text-slate-800" id="weatherTempLow">--°</p>
+                        <p class="text-[10px] text-slate-400 uppercase">Low</p>
+                    </div>
+                    <div class="text-center border-l border-slate-200">
+                        <p class="text-lg font-bold text-slate-800" id="weatherPrecipVal">0.00"</p>
+                        <p class="text-[10px] text-slate-400 uppercase">Precip</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ACTIVE PROJECT CARD -->
+        <section id="activeProjectSection" class="px-4 mb-4">
+            <!-- Content rendered by updateActiveProjectCard() -->
+        </section>
+
+        <!-- REPORT CARDS BY URGENCY -->
+        <section id="reportCardsSection" class="px-4 mb-4">
+            <!-- Rendered by renderReportCards() -->
+        </section>
+
+        <!-- DYNAMIC STATUS/ACTION CARD -->
+        <section id="reportStatusSection" class="px-4 mb-4">
+            <!-- Content rendered by updateReportStatus() -->
+        </section>
+
+        <!-- REPORT ARCHIVES -->
+        <section class="px-4 mb-4">
+            <a href="archives.html" class="block bg-white border-l-4 border-dot-slate p-4 hover:bg-slate-50 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-dot-slate flex items-center justify-center shrink-0">
+                        <i class="fas fa-archive text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs font-bold text-dot-slate uppercase tracking-wider">Report Archives</p>
+                        <p class="text-sm text-slate-600">View past reports and history</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-slate-400"></i>
+                </div>
+            </a>
+        </section>
+
+        <!-- DRAFTS & PENDING REPORTS -->
+        <section id="draftsSection" class="px-4 mb-4 flex-1 hidden">
+            <a href="drafts.html" class="block bg-white border-l-4 border-dot-orange p-4 hover:bg-orange-50 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-dot-orange flex items-center justify-center shrink-0 relative">
+                        <i class="fas fa-clock text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs font-bold text-dot-orange uppercase tracking-wider">Drafts & Pending</p>
+                        <p id="draftsDescription" class="text-sm text-slate-600">Reports waiting to sync</p>
+                    </div>
+                    <span id="draftsBadge" class="bg-dot-orange text-white text-xs font-bold px-2 py-1 min-w-[24px] text-center">0</span>
+                    <i class="fas fa-chevron-right text-dot-orange"></i>
+                </div>
+            </a>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="bg-dot-navy text-center py-3">
+            <p class="text-[10px] text-slate-500 uppercase tracking-widest">
+                <i class="fas fa-shield-alt mr-1"></i>
+                DOT Compliant Field Documentation System
+            </p>
+            <div class="text-center text-gray-600 text-xs mt-2">
+                <a href="admin-debug.html" class="hover:text-gray-400">Debug Tools</a>
+            </div>
+        </footer>
+    </div>
+
+    <script src="./js/index.js"></script>
+
+    <!-- Project Picker Modal -->
+    <div id="projectPickerModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white max-w-sm w-full shadow-xl max-h-[80vh] flex flex-col">
+            <!-- Header -->
+            <div class="bg-dot-navy p-4 shrink-0">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3 text-white">
+                        <i class="fas fa-folder-open text-dot-yellow"></i>
+                        <h3 class="font-bold uppercase tracking-wider">Select Project</h3>
+                    </div>
+                    <button onclick="closeProjectPickerModal()" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Project List (scrollable) -->
+            <div id="projectPickerList" class="flex-1 overflow-y-auto">
+                <!-- Projects rendered here by showProjectPickerModal() -->
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 border-t border-slate-200 bg-slate-50 shrink-0">
+                <a href="projects.html" class="flex items-center justify-center gap-2 text-sm text-dot-blue hover:text-dot-navy font-bold uppercase transition-colors">
+                    <i class="fas fa-cog"></i>
+                    Manage Projects
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offline Banner -->
+    <div id="offline-banner" class="fixed top-0 left-0 right-0 bg-yellow-500 text-yellow-900 text-center py-2 px-4 font-bold text-sm z-[9999] transform -translate-y-full transition-transform duration-300" style="display: none;">
+        <i class="fas fa-wifi-slash mr-2"></i>You are offline - Some features may be unavailable
+    </div>
+
+    <!-- Initialize PWA features -->
+    <script>
+        initPWA({ onOnline: updateDraftsSection });
+    </script>
+</body>
+</html>

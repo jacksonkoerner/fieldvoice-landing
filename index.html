@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FieldVoice Pro — Voice-Powered Field Reports for Construction</title>
+    <meta name="description" content="Speak your inspection notes. AI handles the rest. Done when you leave the job site.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030712;
+            --bg2: #0a0f1a;
+            --accent: #f97316;
+            --accent2: #fb923c;
+            --green: #10b981;
+            --blue: #3b82f6;
+            --red: #ef4444;
+            --white: #f8fafc;
+            --gray: #94a3b8;
+            --gray2: #64748b;
+            --dim: #1e293b;
+            --border: rgba(148,163,184,0.08);
+            --glow: rgba(249,115,22,0.12);
+        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        html{scroll-behavior:smooth}
+        body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--white);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+        .container{max-width:1200px;margin:0 auto;padding:0 24px}
+        section{position:relative}
+
+        /* ===== NAV ===== */
+        .nav{position:fixed;top:0;width:100%;z-index:100;padding:0 24px;transition:all .3s}
+        .nav.scrolled{background:rgba(3,7,18,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+        .nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:72px}
+        .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--white);font-weight:800;font-size:1.25rem}
+        .nav-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),#ea580c);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+        .nav-links{display:none;gap:32px;align-items:center}
+        .nav-links a{color:var(--gray);text-decoration:none;font-size:.9rem;font-weight:500;transition:color .2s}
+        .nav-links a:hover,.nav-links a.active{color:var(--white)}
+        .nav-cta{background:var(--accent);color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:.9rem;transition:all .2s;border:none;cursor:pointer}
+        .nav-cta:hover{transform:translateY(-1px);box-shadow:0 8px 25px rgba(249,115,22,.35)}
+        .mobile-menu-btn{display:flex;flex-direction:column;gap:5px;cursor:pointer;padding:8px;background:none;border:none}
+        .mobile-menu-btn span{display:block;width:22px;height:2px;background:var(--gray);border-radius:2px;transition:all .3s}
+        @media(min-width:768px){.nav-links{display:flex}.mobile-menu-btn{display:none}}
+        .mobile-menu{position:fixed;top:72px;left:0;right:0;background:rgba(3,7,18,0.97);backdrop-filter:blur(20px);padding:24px;display:none;flex-direction:column;gap:16px;border-bottom:1px solid var(--border);z-index:99}
+        .mobile-menu.open{display:flex}
+        .mobile-menu a{color:var(--gray);text-decoration:none;font-size:1rem;font-weight:500;padding:8px 0;transition:color .2s}
+        .mobile-menu a:hover{color:var(--white)}
+
+        /* ===== HERO ===== */
+        .hero{min-height:100vh;display:flex;align-items:center;position:relative;overflow:hidden}
+        .hero-video-bg{position:absolute;inset:0;z-index:0}
+        .hero-video-bg video{width:100%;height:100%;object-fit:cover}
+        .hero-video-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(3,7,18,0.92) 0%,rgba(3,7,18,0.75) 50%,rgba(3,7,18,0.88) 100%)}
+        .hero-content{position:relative;z-index:2;width:100%;padding:120px 0 80px}
+        .hero-grid{display:grid;gap:60px;align-items:center}
+        @media(min-width:768px){.hero-grid{grid-template-columns:1.2fr 1fr}}
+
+        .hero-orb{position:absolute;width:800px;height:800px;border-radius:50%;filter:blur(120px);opacity:.12;pointer-events:none;z-index:1}
+        @media(max-width:767px){.hero-orb{width:400px;height:400px}}
+        .hero-orb-1{background:var(--accent);top:-200px;right:-200px;animation:orbFloat 8s ease-in-out infinite}
+        .hero-orb-2{background:var(--blue);bottom:-300px;left:-200px;animation:orbFloat 10s ease-in-out infinite 2s;opacity:.06}
+        @keyframes orbFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-40px)}}
+
+        .hazard-stripe{height:4px;background:repeating-linear-gradient(-45deg,var(--accent),var(--accent) 6px,#1e293b 6px,#1e293b 12px);width:60px;border-radius:2px;margin-bottom:20px}
+        .hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:100px;font-size:.8rem;font-weight:600;color:var(--accent);background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.15);margin-bottom:24px}
+        .hero-badge .pulse{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 2s ease infinite}
+        @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+
+        .hero h1{font-size:clamp(2.5rem,6vw,4.8rem);font-weight:900;line-height:1.05;letter-spacing:-.03em;margin-bottom:24px}
+        .hero h1 .highlight{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .hero-sub{font-size:1.15rem;color:var(--gray);line-height:1.7;margin-bottom:32px;max-width:480px}
+        .hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+        .btn{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:10px;font-weight:700;font-size:1rem;text-decoration:none;transition:all .25s;border:none;cursor:pointer}
+        .btn-accent{background:var(--accent);color:#fff;box-shadow:0 4px 20px rgba(249,115,22,.25)}
+        .btn-accent:hover{transform:translateY(-2px);box-shadow:0 12px 35px rgba(249,115,22,.35)}
+        .btn-ghost{background:rgba(255,255,255,.04);color:var(--white);border:1px solid rgba(255,255,255,.1)}
+        .btn-ghost:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2)}
+        .hero-proof{display:flex;gap:24px;font-size:.85rem;color:var(--gray2);flex-wrap:wrap}
+        .hero-proof span{display:flex;align-items:center;gap:6px}
+        .check{color:var(--green)}
+
+        /* Phone mockup */
+        .phone-wrap{display:flex;justify-content:center;position:relative}
+        .phone{width:260px;height:520px;background:linear-gradient(160deg,#111827,#0a0f1a);border-radius:36px;border:3px solid rgba(255,255,255,.08);box-shadow:0 60px 120px rgba(0,0,0,.5),0 0 80px rgba(249,115,22,.06);position:relative;overflow:hidden;animation:phoneFloat 6s ease-in-out infinite}
+        @keyframes phoneFloat{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-12px) rotate(1deg)}}
+        .phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:110px;height:26px;background:#000;border-radius:0 0 16px 16px;z-index:5}
+        .phone-screen{position:absolute;inset:3px;border-radius:33px;overflow:hidden}
+        .phone-screen video{width:100%;height:100%;object-fit:cover}
+        .float-badge{position:absolute;padding:8px 16px;border-radius:20px;font-size:.75rem;font-weight:700;backdrop-filter:blur(10px);box-shadow:0 8px 30px rgba(0,0,0,.3);white-space:nowrap;z-index:2}
+        .badge-gps{top:15%;right:-30px;background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.2);animation:floatBadge 4s ease-in-out infinite}
+        .badge-offline{bottom:20%;left:-30px;background:rgba(59,130,246,.15);color:var(--blue);border:1px solid rgba(59,130,246,.2);animation:floatBadge 5s ease-in-out infinite .5s}
+        .badge-dot{top:55%;right:-40px;background:rgba(249,115,22,.15);color:var(--accent);border:1px solid rgba(249,115,22,.2);animation:floatBadge 4.5s ease-in-out infinite 1s}
+        @keyframes floatBadge{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+        /* ===== TICKER ===== */
+        .ticker-wrap{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:16px 0;overflow:hidden;background:rgba(255,255,255,.01)}
+        .ticker{display:flex;gap:48px;animation:tickerScroll 25s linear infinite;width:max-content}
+        .ticker-item{display:flex;align-items:center;gap:10px;color:var(--gray2);font-weight:600;font-size:.85rem;white-space:nowrap}
+        .ticker-item span{color:var(--accent)}
+        @keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+        /* ===== SECTION SHARED ===== */
+        .sec-pad{padding:120px 0}
+        .sec-header{text-align:center;max-width:640px;margin:0 auto 64px}
+        .sec-label{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:700;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;margin-bottom:16px}
+        .sec-header h2{font-size:clamp(2rem,4vw,3.2rem);font-weight:800;line-height:1.1;letter-spacing:-.02em;margin-bottom:16px}
+        .sec-header p{color:var(--gray);font-size:1.1rem;line-height:1.7}
+        .highlight-text{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+        /* ===== ADMIN DASHBOARD SECTION ===== */
+        .admin-section{background:linear-gradient(180deg,rgba(249,115,22,.02),transparent,rgba(249,115,22,.02))}
+        .browser-mockup{max-width:1100px;margin:0 auto;border-radius:16px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06);background:#111827}
+        .browser-topbar{display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(180deg,#1e293b,#18212f);border-bottom:1px solid rgba(255,255,255,.06)}
+        .browser-dots{display:flex;gap:7px}
+        .browser-dots span{width:12px;height:12px;border-radius:50%;display:block}
+        .browser-dots span:nth-child(1){background:#ef4444}
+        .browser-dots span:nth-child(2){background:#f59e0b}
+        .browser-dots span:nth-child(3){background:#10b981}
+        .browser-url{flex:1;background:rgba(255,255,255,.06);border-radius:6px;padding:7px 14px;font-size:.78rem;color:var(--gray2);font-family:'Inter',monospace;display:flex;align-items:center;gap:8px;margin:0 8px}
+        .browser-url .lock-icon{color:var(--green);font-size:.7rem}
+        .browser-url .url-text{color:var(--gray)}
+        .browser-body{height:580px;position:relative;overflow:hidden}
+        .browser-body iframe{width:100%;height:100%;border:none;transform-origin:top left}
+        .browser-body .loading-overlay{position:absolute;inset:0;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:2;transition:opacity .5s}
+        .browser-body .loading-overlay.hidden{opacity:0;pointer-events:none}
+        .loading-spinner{width:40px;height:40px;border:3px solid rgba(249,115,22,.15);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .admin-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;max-width:900px;margin:32px auto 0}
+        .admin-feat{display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid var(--border);font-size:.9rem;font-weight:500;color:var(--gray)}
+        .admin-feat .af-icon{font-size:1.2rem}
+        .admin-feat strong{color:var(--white)}
+
+        /* ===== APP SECTION ===== */
+        .app-section-grid{display:grid;gap:60px;align-items:center}
+        @media(min-width:768px){.app-section-grid{grid-template-columns:auto 1fr}}
+        .app-phone{width:300px;height:600px;background:linear-gradient(160deg,#111827,#0a0f1a);border-radius:40px;border:3px solid rgba(255,255,255,.08);box-shadow:0 60px 120px rgba(0,0,0,.5),0 0 80px rgba(249,115,22,.06);position:relative;overflow:hidden;flex-shrink:0}
+        .app-phone .phone-notch{width:120px;height:28px}
+        .app-phone .phone-screen{position:absolute;inset:3px;border-radius:37px;overflow:hidden}
+        .app-phone .phone-screen video{width:100%;height:100%;object-fit:cover}
+        .app-features-list{display:flex;flex-direction:column;gap:20px}
+        .app-feat-item{display:flex;gap:16px;padding:20px;border-radius:14px;background:rgba(255,255,255,.02);border:1px solid var(--border);transition:all .3s}
+        .app-feat-item:hover{border-color:rgba(249,115,22,.15);background:rgba(249,115,22,.03)}
+        .app-feat-icon{width:48px;height:48px;border-radius:12px;background:rgba(249,115,22,.08);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+        .app-feat-item h4{font-size:1rem;font-weight:700;margin-bottom:4px}
+        .app-feat-item p{color:var(--gray);font-size:.9rem;line-height:1.6}
+
+        /* ===== HOW IT WORKS ===== */
+        .steps-grid{display:grid;gap:32px;max-width:900px;margin:0 auto}
+        @media(min-width:768px){.steps-grid{grid-template-columns:repeat(3,1fr)}}
+        .step-card{text-align:center;padding:40px 28px;border-radius:20px;background:rgba(255,255,255,.02);border:1px solid var(--border);position:relative;transition:all .3s}
+        .step-card:hover{border-color:rgba(249,115,22,.15);transform:translateY(-4px)}
+        .step-num{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ea580c);font-weight:900;font-size:1.3rem;margin-bottom:20px;box-shadow:0 0 40px rgba(249,115,22,.2)}
+        .step-card h3{font-size:1.15rem;font-weight:700;margin-bottom:10px}
+        .step-card p{color:var(--gray);font-size:.9rem;line-height:1.7}
+        .step-connector{display:none;position:absolute;top:50%;right:-20px;color:var(--accent);font-size:1.5rem;font-weight:700}
+        @media(min-width:768px){.step-connector{display:block}}
+
+        /* ===== STATS BAR ===== */
+        .stats-bar{background:linear-gradient(90deg,rgba(249,115,22,.06),rgba(249,115,22,.02),rgba(249,115,22,.06));border-top:1px solid rgba(249,115,22,.1);border-bottom:1px solid rgba(249,115,22,.1);padding:48px 24px;position:relative;overflow:hidden}
+        .stats-bar::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:repeating-linear-gradient(-45deg,var(--accent),var(--accent) 6px,transparent 6px,transparent 12px)}
+        .stats-bar-inner{max-width:900px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:40px;text-align:center}
+        .stat-item .stat-num{font-size:clamp(2.2rem,4vw,3.2rem);font-weight:900;background:linear-gradient(135deg,var(--white),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1}
+        .stat-item .stat-label{color:var(--gray);font-size:.95rem;margin-top:6px;font-weight:500}
+
+        /* ===== FIELD TOOLS PREVIEW ===== */
+        .tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;max-width:950px;margin:0 auto}
+        .tool-card{display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px 16px;border-radius:16px;background:rgba(255,255,255,.02);border:1px solid var(--border);text-decoration:none;color:var(--white);transition:all .3s;cursor:pointer}
+        .tool-card:hover{border-color:rgba(249,115,22,.2);transform:translateY(-4px);box-shadow:0 20px 50px rgba(0,0,0,.3);background:rgba(249,115,22,.03)}
+        .tool-icon{width:52px;height:52px;border-radius:14px;background:rgba(249,115,22,.08);display:flex;align-items:center;justify-content:center;font-size:1.5rem;transition:all .3s}
+        .tool-card:hover .tool-icon{background:rgba(249,115,22,.15);transform:scale(1.1)}
+        .tool-card .tool-name{font-size:.85rem;font-weight:600;text-align:center}
+
+        /* ===== CTA SECTION ===== */
+        .cta{text-align:center;padding:120px 24px;position:relative;overflow:hidden}
+        .cta-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:var(--accent);filter:blur(200px);opacity:.06;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+        .cta h2{font-size:clamp(2rem,5vw,3.5rem);font-weight:900;margin-bottom:20px;letter-spacing:-.02em;position:relative;z-index:1}
+        .cta p{color:var(--gray);font-size:1.15rem;margin-bottom:32px;position:relative;z-index:1}
+        .cta .btn{position:relative;z-index:1;font-size:1.15rem;padding:18px 40px}
+        .cta-note{margin-top:20px;font-size:.85rem;color:var(--gray2);position:relative;z-index:1}
+
+        /* ===== PRICING ANCHOR ===== */
+        .pricing-section{background:linear-gradient(180deg,transparent,rgba(249,115,22,.02),transparent)}
+        .pricing-card{max-width:440px;margin:0 auto;background:rgba(255,255,255,.02);border:2px solid rgba(249,115,22,.2);border-radius:24px;padding:48px 36px;text-align:center;position:relative;overflow:hidden}
+        .pricing-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:repeating-linear-gradient(-45deg,var(--accent),var(--accent) 6px,#1e293b 6px,#1e293b 12px)}
+        .pricing-popular{position:absolute;top:16px;right:-32px;background:var(--accent);color:#fff;font-size:.72rem;font-weight:700;padding:4px 40px;transform:rotate(45deg);letter-spacing:.05em;text-transform:uppercase}
+        .pricing-price{margin:24px 0}
+        .pricing-price .currency{font-size:1.5rem;font-weight:700;vertical-align:super;color:var(--gray)}
+        .pricing-price .amount{font-size:4rem;font-weight:900;line-height:1}
+        .pricing-price .period{font-size:1rem;color:var(--gray);font-weight:500}
+        .pricing-name{font-size:1.3rem;font-weight:800}
+        .pricing-desc{color:var(--gray);font-size:.95rem;margin-top:8px}
+        .pricing-features{list-style:none;text-align:left;margin:28px 0;display:flex;flex-direction:column;gap:12px}
+        .pricing-features li{display:flex;align-items:center;gap:10px;font-size:.95rem;color:var(--gray)}
+        .pricing-features li .pf-check{color:var(--green);font-weight:700}
+
+        /* ===== FOOTER ===== */
+        .footer{border-top:1px solid var(--border);padding:60px 0 30px;background:rgba(0,0,0,.3)}
+        .footer-grid{display:grid;gap:40px;margin-bottom:40px}
+        @media(min-width:768px){.footer-grid{grid-template-columns:2fr 1fr 1fr 1fr}}
+        .footer-brand p{color:var(--gray);font-size:.9rem;line-height:1.7;margin-top:12px}
+        .footer-col h4{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--white);margin-bottom:16px}
+        .footer-col a{display:block;color:var(--gray);text-decoration:none;font-size:.9rem;margin-bottom:10px;transition:color .2s}
+        .footer-col a:hover{color:var(--accent)}
+        .footer-bottom{border-top:1px solid var(--border);padding-top:24px;text-align:center;color:var(--gray2);font-size:.85rem}
+
+        /* ===== SCROLL REVEAL ===== */
+        .reveal{opacity:0;transform:translateY(28px);transition:all .7s cubic-bezier(.4,0,.2,1)}
+        .reveal.visible{opacity:1;transform:translateY(0)}
+        .reveal-delay-1{transition-delay:.1s}
+        .reveal-delay-2{transition-delay:.2s}
+        .reveal-delay-3{transition-delay:.3s}
+
+        #particles{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+
+        /* ===== MOBILE ===== */
+        @media(max-width:767px){
+            .hero-content{padding:100px 0 40px}
+            .hero h1{font-size:2.5rem}
+            .hero-sub{font-size:1rem}
+            .hero-ctas{flex-direction:column}
+            .hero-ctas .btn{width:100%;justify-content:center}
+            .hero-proof{flex-direction:column;gap:8px}
+            .phone-wrap{margin-top:40px}
+            .phone{width:220px;height:440px;border-radius:30px}
+            .phone-notch{width:90px;height:22px;border-radius:0 0 12px 12px}
+            .float-badge{font-size:.7rem;padding:6px 12px}
+            .badge-gps{right:-10px}
+            .badge-offline{left:-10px}
+            .badge-dot{right:-15px}
+            .sec-pad{padding:72px 0}
+            .sec-header{margin-bottom:40px}
+            .sec-header h2{font-size:1.8rem}
+            .browser-body{height:350px}
+            .app-phone{width:240px;height:480px;margin:0 auto}
+            .app-section-grid{text-align:center}
+            .stats-bar-inner{grid-template-columns:1fr;gap:24px}
+            .tools-grid{grid-template-columns:repeat(2,1fr)}
+            .cta{padding:80px 24px}
+            .cta h2{font-size:2rem}
+            .pricing-card{padding:36px 24px;margin:0 12px}
+        }
+
+        @media(prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01ms!important}}
+    </style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<!-- NAV -->
+<nav class="nav">
+    <div class="nav-inner">
+        <a href="index.html" class="nav-logo">
+            <div class="nav-logo-icon">🎙️</div>
+            FieldVoice Pro
+        </a>
+        <div class="nav-links">
+            <a href="index.html" class="active">Home</a>
+            <a href="demo.html">Demo</a>
+            <a href="tools.html">Tools</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#" class="nav-cta">Start Free Trial</a>
+        </div>
+        <button class="mobile-menu-btn" onclick="document.querySelector('.mobile-menu').classList.toggle('open')">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+</nav>
+<div class="mobile-menu">
+    <a href="index.html">Home</a>
+    <a href="demo.html">Demo</a>
+    <a href="tools.html">Tools</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#" class="nav-cta" style="text-align:center;display:block;margin-top:8px">Start Free Trial</a>
+</div>
+
+<!-- HERO with video background -->
+<section class="hero">
+    <div class="hero-video-bg">
+        <video autoplay loop muted playsinline>
+            <source src="assets/video/app-showcase.mp4" type="video/mp4">
+        </video>
+    </div>
+    <div class="hero-orb hero-orb-1"></div>
+    <div class="hero-orb hero-orb-2"></div>
+    <div class="hero-content">
+        <div class="container">
+            <div class="hero-grid">
+                <div>
+                    <div class="hazard-stripe"></div>
+                    <div class="hero-badge">
+                        <span class="pulse"></span>
+                        AI-Powered Field Reporting
+                    </div>
+                    <h1>Speak it.<br><span class="highlight">We build it.</span></h1>
+                    <p class="hero-sub">
+                        Voice-first documentation for construction inspectors. Capture notes throughout the day. AI writes the DOT-compliant report. Done when you leave the site.
+                    </p>
+                    <div class="hero-ctas">
+                        <a href="#" class="btn btn-accent">
+                            Start Free Trial <span>→</span>
+                        </a>
+                        <a href="demo.html" class="btn btn-ghost">
+                            ▶ Try the Live Demo
+                        </a>
+                    </div>
+                    <div class="hero-proof">
+                        <span><span class="check">✓</span> No credit card required</span>
+                        <span><span class="check">✓</span> Works offline</span>
+                        <span><span class="check">✓</span> DOT compliant</span>
+                    </div>
+                </div>
+                <div class="phone-wrap">
+                    <div class="phone">
+                        <div class="phone-notch"></div>
+                        <div class="phone-screen">
+                            <video autoplay loop muted playsinline>
+                                <source src="assets/video/how-it-works.mp4" type="video/mp4">
+                            </video>
+                        </div>
+                    </div>
+                    <div class="float-badge badge-gps">📍 GPS Tagged</div>
+                    <div class="float-badge badge-offline">📴 Offline Ready</div>
+                    <div class="float-badge badge-dot">✓ DOT Compliant</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+    <div class="ticker">
+        <div class="ticker-item"><span>🛣️</span> Highway Projects</div>
+        <div class="ticker-item"><span>🌉</span> Bridge Rehabilitation</div>
+        <div class="ticker-item"><span>🏗️</span> Commercial Construction</div>
+        <div class="ticker-item"><span>🚧</span> Roadway Reconstruction</div>
+        <div class="ticker-item"><span>📋</span> RPR Daily Reports</div>
+        <div class="ticker-item"><span>🔧</span> Utility Infrastructure</div>
+        <div class="ticker-item"><span>🛣️</span> Highway Projects</div>
+        <div class="ticker-item"><span>🌉</span> Bridge Rehabilitation</div>
+        <div class="ticker-item"><span>🏗️</span> Commercial Construction</div>
+        <div class="ticker-item"><span>🚧</span> Roadway Reconstruction</div>
+        <div class="ticker-item"><span>📋</span> RPR Daily Reports</div>
+        <div class="ticker-item"><span>🔧</span> Utility Infrastructure</div>
+    </div>
+</div>
+
+<!-- ADMIN DASHBOARD SECTION -->
+<section class="sec-pad admin-section">
+    <div class="container">
+        <div class="sec-header reveal">
+            <div class="sec-label">🖥️ Command Center</div>
+            <h2>Command Center —<br><span class="highlight-text">See Everything.</span></h2>
+            <p>Real-time KPIs, interactive maps, AI-powered insights, and complete project oversight — all in one dashboard.</p>
+        </div>
+
+        <div class="browser-mockup reveal">
+            <div class="browser-topbar">
+                <div class="browser-dots">
+                    <span></span><span></span><span></span>
+                </div>
+                <div class="browser-url">
+                    <span class="lock-icon">🔒</span>
+                    <span class="url-text">app.fieldvoicepro.com/admin</span>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <div style="width:20px;height:20px;border-radius:4px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:.6rem;color:var(--gray2)">⊞</div>
+                    <div style="width:20px;height:20px;border-radius:4px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:.6rem;color:var(--gray2)">⊟</div>
+                </div>
+            </div>
+            <div class="browser-body">
+                <div class="loading-overlay" id="adminLoading">
+                    <div class="loading-spinner"></div>
+                    <span style="color:var(--gray);font-size:.85rem">Loading dashboard...</span>
+                </div>
+                <iframe src="admin/index.html" loading="lazy" onload="document.getElementById('adminLoading').classList.add('hidden')"></iframe>
+            </div>
+        </div>
+
+        <div class="admin-features reveal">
+            <div class="admin-feat"><span class="af-icon">📊</span> <strong>KPI Dashboard</strong></div>
+            <div class="admin-feat"><span class="af-icon">🗺️</span> <strong>Live Project Map</strong></div>
+            <div class="admin-feat"><span class="af-icon">📄</span> <strong>Report Management</strong></div>
+            <div class="admin-feat"><span class="af-icon">🧠</span> <strong>AI Insights</strong></div>
+            <div class="admin-feat"><span class="af-icon">📅</span> <strong>Calendar View</strong></div>
+            <div class="admin-feat"><span class="af-icon">👥</span> <strong>Team Overview</strong></div>
+        </div>
+    </div>
+</section>
+
+<!-- APP SECTION -->
+<section class="sec-pad">
+    <div class="container">
+        <div class="sec-header reveal">
+            <div class="sec-label">📱 The App</div>
+            <h2>Your field office,<br>in your pocket.</h2>
+            <p>Purpose-built for construction inspectors. Capture, refine, and submit — all from your phone.</p>
+        </div>
+
+        <div class="app-section-grid">
+            <div class="phone-wrap reveal">
+                <div class="app-phone">
+                    <div class="phone-notch"></div>
+                    <div class="phone-screen">
+                        <video autoplay loop muted playsinline>
+                            <source src="assets/video/report-demo.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                </div>
+            </div>
+            <div class="app-features-list">
+                <div class="app-feat-item reveal reveal-delay-1">
+                    <div class="app-feat-icon">🎙️</div>
+                    <div>
+                        <h4>Voice Capture</h4>
+                        <p>Two modes: Quick Notes for freeform dictation, or Guided Sections for structured DOT categories.</p>
+                    </div>
+                </div>
+                <div class="app-feat-item reveal reveal-delay-2">
+                    <div class="app-feat-icon">🤖</div>
+                    <div>
+                        <h4>AI Refinement</h4>
+                        <p>Transforms casual speech into professional, DOT-compliant language in ~15 seconds.</p>
+                    </div>
+                </div>
+                <div class="app-feat-item reveal reveal-delay-3">
+                    <div class="app-feat-icon">📸</div>
+                    <div>
+                        <h4>GPS-Tagged Photos</h4>
+                        <p>Every photo captures coordinates, timestamps, and weather. Auto-embeds into reports.</p>
+                    </div>
+                </div>
+                <div class="app-feat-item reveal">
+                    <div class="app-feat-icon">📄</div>
+                    <div>
+                        <h4>Instant PDF Reports</h4>
+                        <p>One tap to generate print-ready RPR reports with professional formatting and digital signatures.</p>
+                    </div>
+                </div>
+                <div class="app-feat-item reveal">
+                    <div class="app-feat-icon">📴</div>
+                    <div>
+                        <h4>Offline-First</h4>
+                        <p>Full PWA that works in dead zones. Record in the canyon, sync when you get signal.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="sec-pad" style="background:linear-gradient(180deg,transparent,rgba(249,115,22,.02),transparent)">
+    <div class="container">
+        <div class="sec-header reveal">
+            <div class="sec-label">⚡ How It Works</div>
+            <h2>Three steps. Zero typing.</h2>
+            <p>From field observations to finished report before you leave the job site.</p>
+        </div>
+
+        <div class="steps-grid">
+            <div class="step-card reveal">
+                <div class="step-connector">→</div>
+                <div class="step-num">1</div>
+                <h3>Speak</h3>
+                <p>Talk into your phone throughout the day. Dictate notes as you inspect — no typing, no writing, no stopping work.</p>
+            </div>
+            <div class="step-card reveal reveal-delay-1">
+                <div class="step-connector">→</div>
+                <div class="step-num">2</div>
+                <h3>AI Processes</h3>
+                <p>FieldVoice AI transforms your casual field talk into DOT-compliant, professionally formatted inspection language.</p>
+            </div>
+            <div class="step-card reveal reveal-delay-2">
+                <div class="step-num">3</div>
+                <h3>Report Ready</h3>
+                <p>Review, sign, and submit before you leave the site. PDF auto-saves to the cloud. Your evenings are yours again.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+    <div class="stats-bar-inner reveal">
+        <div class="stat-item">
+            <div class="stat-num">3.5h</div>
+            <div class="stat-label">Saved Daily</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-num">100%</div>
+            <div class="stat-label">DOT Compliant</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-num">$29</div>
+            <div class="stat-label">Per Month</div>
+        </div>
+    </div>
+</div>
+
+<!-- FIELD TOOLS PREVIEW -->
+<section class="sec-pad">
+    <div class="container">
+        <div class="sec-header reveal">
+            <div class="sec-label">🧰 Built-In Tools</div>
+            <h2>10 field tools.<br><span class="highlight-text">Zero extra apps.</span></h2>
+            <p>Every tool a construction inspector needs, built right into the app. No switching, no subscriptions, no clutter.</p>
+        </div>
+
+        <div class="tools-grid reveal">
+            <a href="tools.html#compass" class="tool-card">
+                <div class="tool-icon">🧭</div>
+                <div class="tool-name">Compass</div>
+            </a>
+            <a href="tools.html#distance" class="tool-card">
+                <div class="tool-icon">📏</div>
+                <div class="tool-name">Distance</div>
+            </a>
+            <a href="tools.html#maps" class="tool-card">
+                <div class="tool-icon">🗺️</div>
+                <div class="tool-name">Maps</div>
+            </a>
+            <a href="tools.html#calculator" class="tool-card">
+                <div class="tool-icon">🔢</div>
+                <div class="tool-name">Calculator</div>
+            </a>
+            <a href="tools.html#slope" class="tool-card">
+                <div class="tool-icon">📐</div>
+                <div class="tool-name">Slope & Grade</div>
+            </a>
+            <a href="tools.html#level" class="tool-card">
+                <div class="tool-icon">⚖️</div>
+                <div class="tool-name">Level</div>
+            </a>
+            <a href="tools.html#db-meter" class="tool-card">
+                <div class="tool-icon">🔊</div>
+                <div class="tool-name">dB Meter</div>
+            </a>
+            <a href="tools.html#timer" class="tool-card">
+                <div class="tool-icon">⏱️</div>
+                <div class="tool-name">Timer</div>
+            </a>
+            <a href="tools.html#flashlight" class="tool-card">
+                <div class="tool-icon">🔦</div>
+                <div class="tool-name">Flashlight</div>
+            </a>
+            <a href="tools.html#qr" class="tool-card">
+                <div class="tool-icon">📷</div>
+                <div class="tool-name">QR Scanner</div>
+            </a>
+        </div>
+
+        <div style="text-align:center;margin-top:40px" class="reveal">
+            <a href="tools.html" class="btn btn-ghost">
+                Explore All Tools <span>→</span>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" class="sec-pad pricing-section">
+    <div class="container">
+        <div class="sec-header reveal">
+            <div class="sec-label">💰 Pricing</div>
+            <h2>Simple, honest pricing.</h2>
+            <p>One plan. Everything included. No surprise fees.</p>
+        </div>
+
+        <div class="pricing-card reveal">
+            <div class="pricing-popular">BEST VALUE</div>
+            <div class="pricing-name">FieldVoice Pro</div>
+            <div class="pricing-desc">Everything you need in the field.</div>
+            <div class="pricing-price">
+                <span class="currency">$</span><span class="amount">29</span><span class="period">/mo</span>
+            </div>
+            <ul class="pricing-features">
+                <li><span class="pf-check">✓</span> Unlimited voice reports</li>
+                <li><span class="pf-check">✓</span> AI refinement engine</li>
+                <li><span class="pf-check">✓</span> GPS-tagged photos</li>
+                <li><span class="pf-check">✓</span> Offline mode + cloud sync</li>
+                <li><span class="pf-check">✓</span> Instant PDF export</li>
+                <li><span class="pf-check">✓</span> 10 built-in field tools</li>
+                <li><span class="pf-check">✓</span> Admin command center</li>
+                <li><span class="pf-check">✓</span> DOT-compliant templates</li>
+            </ul>
+            <a href="#" class="btn btn-accent" style="width:100%;justify-content:center">
+                Start Free Trial <span>→</span>
+            </a>
+            <div style="margin-top:12px;font-size:.8rem;color:var(--gray2)">14-day free trial · No credit card required</div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+    <div class="cta-glow"></div>
+    <div class="hazard-stripe" style="margin:0 auto 32px"></div>
+    <h2>Done when you leave the site.</h2>
+    <p>Join the inspectors who've taken their evenings back.</p>
+    <a href="#" class="btn btn-accent">
+        Start Free Trial <span>→</span>
+    </a>
+    <div class="cta-note">Free for 14 days · Works on any phone · Setup in 5 minutes</div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <a href="index.html" class="nav-logo">
+                    <div class="nav-logo-icon">🎙️</div>
+                    FieldVoice Pro
+                </a>
+                <p>AI-powered voice documentation for construction inspectors. Speak your notes. Get compliant reports. Keep your evenings.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Product</h4>
+                <a href="index.html">Home</a>
+                <a href="demo.html">Demo</a>
+                <a href="tools.html">Field Tools</a>
+                <a href="#pricing">Pricing</a>
+            </div>
+            <div class="footer-col">
+                <h4>Resources</h4>
+                <a href="#">Documentation</a>
+                <a href="#">Help Center</a>
+                <a href="#">API</a>
+            </div>
+            <div class="footer-col">
+                <h4>Company</h4>
+                <a href="#">About</a>
+                <a href="#">Contact</a>
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 FieldVoice Pro. Built for inspectors who'd rather be building.
+        </div>
+    </div>
+</footer>
+
+<script>
+// Particle background
+(function(){
+    const c=document.getElementById('particles'),ctx=c.getContext('2d');let w,h,particles=[];
+    function resize(){w=c.width=window.innerWidth;h=c.height=window.innerHeight}
+    function init(){resize();particles=[];for(let i=0;i<50;i++)particles.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.5+.5,a:Math.random()*.12+.03})}
+    function draw(){ctx.clearRect(0,0,w,h);particles.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(249,115,22,${p.a})`;ctx.fill();p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=w;if(p.x>w)p.x=0;if(p.y<0)p.y=h;if(p.y>h)p.y=0});for(let i=0;i<particles.length;i++)for(let j=i+1;j<particles.length;j++){const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<140){ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);ctx.strokeStyle=`rgba(249,115,22,${.03*(1-d/140)})`;ctx.lineWidth=.5;ctx.stroke()}}requestAnimationFrame(draw)}
+    window.addEventListener('resize',resize);init();draw()
+})();
+
+// Nav scroll
+const nav=document.querySelector('.nav');
+window.addEventListener('scroll',()=>nav.classList.toggle('scrolled',window.scrollY>50));
+
+// Scroll reveal
+const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:.1,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',e=>{e.preventDefault();const t=document.querySelector(a.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'});document.querySelector('.mobile-menu')?.classList.remove('open')})});
+</script>
+</body>
+</html>

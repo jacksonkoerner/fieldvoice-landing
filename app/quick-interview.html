@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Daily Report - Field Documentation</title>
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
+    <meta name="theme-color" content="#0a1628">
+
+    <!-- iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FieldVoice">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./js/config.js"></script>
+    <script src="./js/storage-keys.js"></script>
+    <script src="./js/indexeddb-utils.js"></script>
+    <script src="./js/data-layer.js"></script>
+    <script src="./js/report-rules.js"></script>
+    <script src="./js/supabase-utils.js"></script>
+    <script src="./js/sync-manager.js"></script>
+    <script src="./js/lock-manager.js"></script>
+    <script src="./js/pwa-utils.js"></script>
+    <script src="./js/ui-utils.js"></script>
+    <script src="./js/media-utils.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dot-navy': '#0a1628',
+                        'dot-blue': '#1e3a5f',
+                        'dot-slate': '#334155',
+                        'dot-orange': '#ea580c',
+                        'dot-yellow': '#f59e0b',
+                        'safety-green': '#16a34a',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+        .header-stripe {
+            background: repeating-linear-gradient(-45deg, #f59e0b, #f59e0b 10px, #0a1628 10px, #0a1628 20px);
+            height: 4px;
+            padding-top: env(safe-area-inset-top);
+        }
+        .section-card { transition: all 0.3s ease; }
+        .section-card.expanded { border-color: #1e3a5f; box-shadow: 0 0 0 2px rgba(30, 58, 95, 0.2); }
+        .section-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+        .section-card.expanded .section-content { max-height: 2000px; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Contractor work cards */
+        .contractor-work-card { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        .contractor-content { transition: max-height 0.3s ease; }
+        .contractor-chevron { transition: transform 0.2s ease; }
+        /* Personnel cards - mobile-friendly collapsible layout */
+        .personnel-card { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        .personnel-card-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .personnel-card.expanded .personnel-card-content {
+            max-height: 500px;
+        }
+        .personnel-card-chevron { transition: transform 0.2s ease; }
+        .personnel-card.expanded .personnel-card-chevron { transform: rotate(180deg); }
+        /* Equipment group headers */
+        .equipment-group { margin-bottom: 0.5rem; }
+        .equipment-group:last-child { margin-bottom: 0; }
+        /* Photo caption textarea - auto-expanding */
+        .caption-textarea {
+            min-height: 2.5rem;
+            max-height: 8rem;
+            resize: none;
+            overflow-y: auto;
+            line-height: 1.3;
+            field-sizing: content;
+        }
+        .caption-counter {
+            font-size: 10px;
+            color: #94a3b8;
+            text-align: right;
+            transition: color 0.2s ease;
+        }
+        .caption-counter.warning { color: #f59e0b; }
+        .caption-counter.limit { color: #ef4444; }
+        /* Auto-expanding textareas */
+        .auto-expand {
+            min-height: 72px; /* ~3 lines */
+            max-height: 400px;
+            overflow-y: hidden;
+            resize: none;
+            transition: height 0.1s ease-out;
+        }
+        .auto-expand.scrollable {
+            overflow-y: auto;
+        }
+        /* Mode selection cards */
+        .mode-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .mode-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .mode-card:active {
+            transform: translateY(0);
+        }
+        /* Minimal mode field notes textarea */
+        .field-notes-textarea {
+            min-height: 200px;
+            max-height: 60vh;
+            overflow-y: auto;
+            resize: none;
+            transition: height 0.1s ease-out;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+    <div class="header-stripe"></div>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-dot-navy z-[9999] flex flex-col items-center justify-center">
+        <div class="w-16 h-16 bg-dot-yellow flex items-center justify-center mb-4">
+            <i class="fas fa-clipboard-list text-dot-navy text-2xl"></i>
+        </div>
+        <i class="fas fa-spinner fa-spin text-white text-2xl mb-3"></i>
+        <p class="text-white font-bold uppercase text-sm">Loading Report...</p>
+        <p id="loadingStatus" class="text-slate-400 text-xs mt-1">Connecting to database</p>
+    </div>
+
+    <!-- MODE SELECTION SCREEN -->
+    <div id="modeSelectionScreen" class="hidden max-w-lg mx-auto min-h-screen flex flex-col">
+        <header class="sticky top-0 z-20 bg-dot-navy text-white">
+            <div class="p-4 flex items-center justify-between">
+                <a href="index.html" class="w-10 h-10 flex items-center justify-center border border-slate-600 hover:bg-slate-800 transition-colors">
+                    <i class="fas fa-arrow-left text-slate-400"></i>
+                </a>
+                <button onclick="showCancelReportModal()" class="w-10 h-10 flex items-center justify-center border border-red-600 hover:bg-red-600 transition-colors group" title="Cancel Report">
+                    <i class="fas fa-times text-red-500 group-hover:text-white"></i>
+                </button>
+                <div class="text-center flex-1 mx-4">
+                    <p id="modeSelectionProjectName" class="text-sm font-bold text-white truncate">Daily Report</p>
+                    <p id="modeSelectionDate" class="text-xs text-slate-400"></p>
+                </div>
+                <div class="w-10"></div>
+            </div>
+        </header>
+
+        <main class="flex-1 p-6 flex flex-col justify-center">
+            <div class="text-center mb-8">
+                <h2 class="text-xl font-bold text-slate-800 mb-2">How do you want to capture today?</h2>
+                <p class="text-sm text-slate-500">Choose your preferred documentation style</p>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Quick Notes Mode -->
+                <button onclick="selectCaptureMode('minimal')" class="mode-card w-full bg-white border-2 border-slate-200 p-6 text-left hover:border-dot-blue">
+                    <div class="flex items-start gap-4">
+                        <div class="w-14 h-14 bg-dot-blue flex items-center justify-center shrink-0">
+                            <i class="fas fa-bolt text-white text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-bold text-slate-800 uppercase text-sm mb-1">Quick Notes</p>
+                            <p class="text-slate-600 text-sm mb-2">One text box + photos</p>
+                            <p class="text-xs text-slate-400">Dictate everything freely. AI organizes it later.</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-slate-300 mt-4"></i>
+                    </div>
+                </button>
+
+                <!-- Guided Sections Mode -->
+                <button onclick="selectCaptureMode('guided')" class="mode-card w-full bg-white border-2 border-slate-200 p-6 text-left hover:border-safety-green">
+                    <div class="flex items-start gap-4">
+                        <div class="w-14 h-14 bg-safety-green flex items-center justify-center shrink-0">
+                            <i class="fas fa-list-check text-white text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-bold text-slate-800 uppercase text-sm mb-1">Guided Sections</p>
+                            <p class="text-slate-600 text-sm mb-2">Work • Issues • Safety • Photos</p>
+                            <p class="text-xs text-slate-400">Light structure. Fill in each section.</p>
+                        </div>
+                        <i class="fas fa-chevron-right text-slate-300 mt-4"></i>
+                    </div>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- MINIMAL MODE UI -->
+    <div id="minimalModeApp" class="hidden max-w-lg mx-auto min-h-screen flex flex-col">
+        <!-- Minimal Mode Header -->
+        <header class="sticky top-0 z-20 bg-dot-navy text-white">
+            <div class="p-4 flex items-center justify-between">
+                <a href="index.html" class="w-10 h-10 flex items-center justify-center border border-slate-600 hover:bg-slate-800 transition-colors">
+                    <i class="fas fa-arrow-left text-slate-400"></i>
+                </a>
+                <button onclick="showCancelReportModal()" class="w-10 h-10 flex items-center justify-center border border-red-600 hover:bg-red-600 transition-colors group" title="Cancel Report">
+                    <i class="fas fa-times text-red-500 group-hover:text-white"></i>
+                </button>
+                <div class="text-center flex-1 mx-4">
+                    <p class="text-[10px] font-bold text-dot-blue uppercase tracking-widest">Quick Notes</p>
+                    <p id="minimalCurrentDate" class="text-sm text-slate-400"></p>
+                </div>
+                <button onclick="showSwitchModeConfirm()" class="w-10 h-10 flex items-center justify-center border border-slate-600 hover:bg-slate-800 transition-colors" title="Switch Mode">
+                    <i class="fas fa-exchange-alt text-slate-400"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Minimal Mode Content -->
+        <main class="flex-1 p-4 pb-32 space-y-4 overflow-y-auto hide-scrollbar">
+            <!-- Weather Card (Minimal) -->
+            <div class="bg-white border-2 border-slate-200 p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-dot-blue flex items-center justify-center">
+                            <i id="minimalWeatherIcon" class="fas fa-cloud-sun text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-500 uppercase">Weather</p>
+                            <p id="minimalWeatherCondition" class="text-sm font-bold text-slate-800">Loading...</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p id="minimalWeatherTemp" class="text-lg font-bold text-slate-800">--</p>
+                        <p id="minimalWeatherPrecip" class="text-xs text-slate-500">Precip: --</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coverage Checklist (Visual Only) -->
+            <div class="bg-white border-2 border-slate-200 p-4">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-dot-blue flex items-center justify-center">
+                        <i class="fas fa-clipboard-check text-white"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-slate-800 uppercase text-sm">Coverage Checklist</p>
+                        <p class="text-xs text-slate-500">Track what you've covered</p>
+                    </div>
+                </div>
+                <div id="freeformChecklist" class="grid grid-cols-2 gap-2">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+
+            <!-- Field Notes Entries -->
+            <div class="bg-white border-2 border-slate-200 p-4">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-dot-navy flex items-center justify-center">
+                        <i class="fas fa-list-alt text-dot-yellow"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-slate-800 uppercase text-sm">Field Notes</p>
+                        <p id="freeformEntriesCount" class="text-xs text-slate-500">No entries yet</p>
+                    </div>
+                </div>
+                
+                <!-- Entries Container -->
+                <div id="freeformEntriesContainer" class="space-y-3 mb-3">
+                    <!-- Rendered by JS -->
+                </div>
+                
+                <!-- Add Entry Button -->
+                <button onclick="addFreeformEntry()" class="w-full p-3 border-2 border-dashed border-slate-300 hover:border-dot-blue text-slate-500 hover:text-dot-blue transition-colors flex items-center justify-center gap-2">
+                    <i class="fas fa-plus"></i>
+                    <span class="font-bold uppercase text-sm">Add Entry</span>
+                </button>
+                <p class="text-xs text-slate-400 mt-2 text-center">
+                    <i class="fas fa-microphone mr-1"></i>Use keyboard mic to dictate
+                </p>
+            </div>
+
+            <!-- Photos Section (Minimal) -->
+            <div class="bg-white border-2 border-slate-200 p-4">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-dot-navy flex items-center justify-center">
+                        <i class="fas fa-camera text-dot-yellow"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-slate-800 uppercase text-sm">Progress Photos</p>
+                        <p id="minimalPhotosCount" class="text-xs text-slate-500">No photos yet</p>
+                    </div>
+                </div>
+                <label class="block cursor-pointer mb-3">
+                    <input type="file" accept="image/*" multiple class="hidden" id="minimalPhotoInput">
+                    <div class="border-2 border-dashed border-slate-300 p-4 text-center hover:border-dot-blue hover:bg-slate-50 transition-colors">
+                        <i class="fas fa-camera text-xl text-slate-400 mb-1"></i>
+                        <p class="font-bold text-slate-600 uppercase text-xs">Tap to Add Photos</p>
+                    </div>
+                </label>
+                <div id="minimalPhotosGrid" class="grid grid-cols-3 gap-2"></div>
+            </div>
+        </main>
+
+        <!-- Finish Button (Fixed at bottom) -->
+        <div class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-100 via-slate-100 to-transparent">
+            <div class="max-w-lg mx-auto">
+                <button onclick="finishMinimalReport()" class="w-full p-4 bg-safety-green hover:bg-green-700 text-white font-bold uppercase transition-colors flex items-center justify-center gap-2">
+                    <i class="fas fa-check"></i>
+                    Finish & Process
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Switch Mode Confirmation Modal -->
+    <div id="switchModeModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm">
+            <div class="bg-dot-navy text-white p-4 text-center">
+                <i class="fas fa-exchange-alt text-2xl mb-2"></i>
+                <p class="font-bold uppercase">Switch Mode?</p>
+            </div>
+            <div class="p-4">
+                <p class="text-sm text-slate-600 mb-4">
+                    Switching modes will preserve your photos and weather data.
+                    <span id="switchModeWarning" class="hidden text-red-600 font-medium">Your field notes will be moved to Additional Notes.</span>
+                </p>
+                <div class="space-y-2">
+                    <button onclick="confirmSwitchMode()" class="w-full p-3 bg-dot-blue hover:bg-dot-navy text-white font-bold uppercase transition-colors">
+                        Switch to <span id="switchModeTarget">Guided Sections</span>
+                    </button>
+                    <button onclick="closeSwitchModeModal()" class="w-full p-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="app" class="hidden max-w-lg mx-auto min-h-screen flex flex-col">
+
+        <!-- Permissions Warning Banner -->
+        <div id="permissionsWarningBanner" class="hidden bg-dot-orange">
+            <div class="px-4 py-3 flex items-center gap-3">
+                <i class="fas fa-exclamation-triangle text-white"></i>
+                <p class="flex-1 text-sm text-white font-medium">Some features require permissions</p>
+                <a href="permissions.html" class="px-3 py-1.5 bg-white text-dot-orange font-bold text-xs">Enable</a>
+                <button onclick="dismissWarningBanner()" class="text-white/80 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Dictation Hint Banner -->
+        <div id="dictationHintBanner" class="bg-dot-blue/10 border-b border-dot-blue/20 px-4 py-3 flex items-center gap-3">
+            <i class="fas fa-microphone text-dot-blue"></i>
+            <p class="flex-1 text-sm text-slate-600">
+                <span class="font-medium">Pro tip:</span> Tap any text field and use the
+                <i class="fas fa-microphone text-xs"></i> on your keyboard to dictate
+            </p>
+            <button onclick="dismissDictationHint()" class="text-slate-400 hover:text-slate-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- HEADER -->
+        <header class="sticky top-0 z-20 bg-dot-navy text-white">
+            <div class="p-4 flex items-center justify-between">
+                <a href="index.html" class="w-10 h-10 flex items-center justify-center border border-slate-600 hover:bg-slate-800 transition-colors">
+                    <i class="fas fa-arrow-left text-slate-400"></i>
+                </a>
+                <button onclick="showCancelReportModal()" class="w-10 h-10 flex items-center justify-center border border-red-600 hover:bg-red-600 transition-colors group" title="Cancel Report">
+                    <i class="fas fa-times text-red-500 group-hover:text-white"></i>
+                </button>
+                <div class="text-center flex-1 mx-2">
+                    <p class="text-[10px] font-bold text-safety-green uppercase tracking-widest">Guided Sections</p>
+                    <p id="currentDate" class="text-sm text-slate-400"></p>
+                </div>
+                <button onclick="showSwitchModeConfirm()" class="w-10 h-10 flex items-center justify-center border border-slate-600 hover:bg-slate-800 transition-colors mr-2" title="Switch Mode">
+                    <i class="fas fa-exchange-alt text-slate-400"></i>
+                </button>
+                <button onclick="finishReport()" class="px-4 py-2 bg-safety-green hover:bg-green-700 text-white text-sm font-bold uppercase transition-colors">
+                    Finish
+                </button>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="px-4 pb-3 flex items-center gap-3">
+                <div class="flex-1 h-2 bg-slate-700 overflow-hidden">
+                    <div id="progressBar" class="h-full bg-safety-green transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <span id="progressText" class="text-xs font-bold text-slate-400">0%</span>
+            </div>
+        </header>
+
+        <!-- SECTIONS LIST -->
+        <main class="flex-1 p-4 pb-8 space-y-3 overflow-y-auto hide-scrollbar">
+
+            <!-- Weather Section -->
+            <div class="section-card bg-white border-2 border-slate-200" data-section="weather">
+                <button onclick="toggleSection('weather')" class="w-full p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-dot-blue flex items-center justify-center">
+                        <i class="fas fa-cloud-sun text-white text-lg"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <p class="font-bold text-slate-800 uppercase text-sm">Weather & Site Conditions</p>
+                        <p id="weather-preview" class="text-sm text-slate-500 truncate">Tap to add</p>
+                    </div>
+                    <div id="weather-status" class="w-8 h-8 border border-slate-300 flex items-center justify-center">
+                        <i class="fas fa-chevron-down text-slate-400 text-xs"></i>
+                    </div>
+                </button>
+                <div class="section-content">
+                    <div class="px-4 pb-4 space-y-3 border-t border-slate-200 pt-4">
+                        <div class="bg-slate-50 border border-slate-200 p-3">
+                            <div class="grid grid-cols-3 gap-3 text-sm">
+                                <div><span class="text-slate-400 text-xs uppercase">Condition</span><p id="weather-condition" class="font-bold text-slate-700">--</p></div>
+                                <div><span class="text-slate-400 text-xs uppercase">Temp</span><p id="weather-temp" class="font-bold text-slate-700">--</p></div>
+                                <div><span class="text-slate-400 text-xs uppercase">Precip</span><p id="weather-precip" class="font-bold text-slate-700">--</p></div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase">Site Conditions</label>
+                            <div class="mt-2">
+                                <textarea id="site-conditions-input" class="w-full bg-white border-2 border-slate-300 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-dot-blue auto-expand" rows="3" placeholder="Describe site conditions..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Work Summary Section (Simplified - single textarea) -->
+            <div class="section-card bg-white border-2 border-slate-200" data-section="activities">
+                <button onclick="toggleSection('activities')" class="w-full p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-safety-green flex items-center justify-center">
+                        <i class="fas fa-tasks text-white text-lg"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <p class="font-bold text-slate-800 uppercase text-sm">Work Summary <span class="text-red-500">*</span></p>
+                        <p id="activities-preview" class="text-sm text-slate-500 truncate">Tap to add</p>
+                    </div>
+                    <div id="activities-status" class="w-8 h-8 border border-slate-300 flex items-center justify-center">
+                        <i class="fas fa-chevron-down text-slate-400 text-xs"></i>
+                    </div>
+                </button>
+                <div class="section-content">
+                    <div class="px-4 pb-4 space-y-3 border-t border-slate-200 pt-4">
+                        <!-- No project warning -->
+                        <div id="no-project-warning" class="hidden bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-700">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>No project configured. Go to Project Config to add contractors.
+                        </div>
+                        <!-- Contractor Work Cards -->
+                        <div id="contractor-work-list" class="space-y-3"></div>
+                        <!-- Footer note -->
+                        <p id="contractor-work-footer" class="hidden text-xs text-slate-400 text-center mt-4 pt-3 border-t border-slate-200">
+                            <i class="fas fa-info-circle mr-1"></i>Need to add a contractor? Go to <a href="index.html" class="text-dot-blue hover:underline">Projects</a>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contractor Personnel Section -->
+            <div class="section-card bg-white border-2 border-slate-200" data-section="personnel">
+                <button onclick="toggleSection('personnel')" class="w-full p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-dot-blue flex items-center justify-center">
+                        <i class="fas fa-users text-white text-lg"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <p class="font-bold text-slate-800 uppercase text-sm">Contractor Personnel</p>
+                        <p id="personnel-preview" class="text-sm text-slate-500 truncate">Tap to add</p>
+                    </div>
+                    <div id="personnel-status" class="w-8 h-8 border border-slate-300 flex items-center justify-center">
+                        <i class="fas fa-chevron-down text-slate-400 text-xs"></i>
+                    </div>
+                </button>
+                <div class="section-content">
+                    <div class="px-4 pb-4 space-y-3 border-t border-slate-200 pt-4">
+                        <!-- Toggle: Any contractors on site? -->
+                        <div id="personnel-toggle-container"></div>
+                        <!-- No project warning -->
+                        <div id="no-project-warning-ops" class="hidden bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-700">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>No project configured. Go to Project Config to add contractors.
+                        </div>
+                        <!-- Personnel totals summary -->
+                        <div id="personnel-totals" class="hidden bg-slate-50 border border-slate-200 p-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-500 uppercase">Total Personnel</span>
+                                <span id="personnel-total-count" class="text-lg font-bold text-dot-blue">0</span>
+                            </div>
+                        </div>
+                        <!-- Personnel cards container -->
+                        <div id="personnel-list" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Equipment Section -->
+            <div class="section-card bg-white border-2 border-slate-200" data-section="equipment">
+                <button onclick="toggleSection('equipment')" class="w-full p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-dot-orange flex items-center justify-center">
+                        <i class="fas fa-truck text-white text-lg"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <p class="font-bold text-slate-800 uppercase text-sm">Equipment Used</p>
+                        <p id="equipment-preview" class="text-sm text-slate-500 truncate">Tap to add</p>
+                    </div>
+                    <div id="equipment-status" class="w-8 h-8 border border-slate-300 flex items-center justify-center">
+                        <i class="fas fa-chevron-down text-slate-400 text-xs"></i>
+                    </div>
+                </button>
+                <div class="section-content">
+                    <div class="px-4 pb-4 space-y-3 border-t border-slate-200 pt-4">
+                        <!-- Equipment rows list - populated by renderEquipmentSection() -->
+                        <div id="equipment-rows-list" class="space-y-3"></div>
+                        <!-- Add Equipment button -->
+                        <button onclick="addEquipmentRow()" class="w-full p-3 border-2 border-dashed border-slate-300 text-slate-500 hover:border-dot-orange hover:text-dot-orange transition-colors flex items-center justify-center gap-2">
+                            <i class="fas fa-plus"></i>
+                            <span class="text-sm font-medium">Add Equipment</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Issues Section -->
+            <div class="section-card bg-white border-2 border-slate-200" data-section="issues">
+                <button onclick="toggleSection('issues')" class="w-full p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-red-600 flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-white text-lg"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <p class="font-bold text-slate-800 uppercase text-sm">Issues & Delays</p>
+                        <p id="issues-preview" class="text-sm text-slate-500 truncate">None reported</p>
+                    </div>
+                    <div id="issues-status" class="w-8 h-8 border border-slate-300 flex items-center justify-center">
+                        <i class="fas fa-chevron-down text-slate-400 text-xs"></i>
+                    </div>
+                </button>
+                <div class="section-content">
+                    <div class="px-4 pb-4 space-y-3 border-t border-slate-200 pt-4">
+                        <button onclick="markNA('issues')" id="issues-na-btn" class="w-full p-3 bg-slate-100 border border-slate-300 text-slate-600 hover:bg-slate-200 transition-colors text-sm font-medium uppercase">
+                            <i class="fas fa-check mr-2"></i>No Issues - Mark as N/A
+                        </button>
+                        <div id="issues-list" class="space-y-2"></div>
+                        <div class="flex items-center gap-2">
+                            <textarea id="issue-input" class="flex-1 bg-white border-2 border-slate-300 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-dot-blue auto-expand" rows="3" placeholder="Describe any issues or delays..."></textarea>
+                            <button onclick="addIssue()" class="px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold transition-colors"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Communications Section -->
+            <div class="section-card bg-white border-2 border-slate-200" data-section="communications">
+                <button onclick="toggleSection('communications')" class="w-full p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-violet-600 flex items-center justify-center">
+                        <i class="fas fa-comments text-white text-lg"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <p class="font-bold text-slate-800 uppercase text-sm">Communications</p>
+                        <p id="communications-preview" class="text-sm text-slate-500 truncate">None recorded</p>
+                    </div>
+                    <div id="communications-status" class="w-8 h-8 border border-slate-300 flex items-center justify-center">
+                        <i class="fas fa-chevron-down text-slate-400 text-xs"></i>
+                    </div>
+                </button>
+                <div class="section-content">
+                    <div class="px-4 pb-4 space-y-3 border-t border-slate-200 pt-4">
+                        <!-- Toggle: Any communications with contractor? -->
+                        <div id="communications-toggle-container"></div>
+                        <!-- N/A message (shown when toggle = No) -->
+                        <div id="communications-na-message" class="hidden bg-slate-100 border border-slate-200 p-3 text-center text-sm text-slate-500">
+                            <i class="fas fa-ban mr-2"></i>Marked as N/A - No communications
+                        </div>
+                        <!-- Communications list -->
+                        <div id="communications-list" class="space-y-2"></div>
+                        <!-- Add communication input - ALWAYS IN DOM (iOS Safari fix) -->
+                        <div id="communications-input-area" class="flex items-center gap-2">
+                            <textarea id="communications-input" class="flex-1 bg-white border-2 border-slate-300 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-violet-500 auto-expand" rows="3" placeholder="Describe communication with contractor..."></textarea>
+                            <button id="communications-add-btn" onclick="addCommunication()" class="px-4 py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold transition-colors"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QA/QC Section -->
+            <div class="section-card bg-white border-2 border-slate-200" data-section="qaqc">
+                <button onclick="toggleSection('qaqc')" class="w-full p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-indigo-600 flex items-center justify-center">
+                        <i class="fas fa-clipboard-check text-white text-lg"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <p class="font-bold text-slate-800 uppercase text-sm">QA/QC Testing</p>
+                        <p id="qaqc-preview" class="text-sm text-slate-500 truncate">None recorded</p>
+                    </div>
+                    <div id="qaqc-status" class="w-8 h-8 border border-slate-300 flex items-center justify-center">
+                        <i class="fas fa-chevron-down text-slate-400 text-xs"></i>
+                    </div>
+                </button>
+                <div class="section-content">
+                    <div class="px-4 pb-4 space-y-3 border-t border-slate-200 pt-4">
+                        <!-- Toggle: Any QA/QC testing today? -->
+                        <div id="qaqc-toggle-container"></div>
+                        <!-- N/A message (shown when toggle = No) -->
+                        <div id="qaqc-na-message" class="hidden bg-slate-100 border border-slate-200 p-3 text-center text-sm text-slate-500">
+                            <i class="fas fa-ban mr-2"></i>Marked as N/A - No QA/QC testing
+                        </div>
+                        <!-- QA/QC entries list -->
+                        <div id="qaqc-list" class="space-y-2"></div>
+                        <!-- Add QA/QC input - ALWAYS IN DOM (iOS Safari fix) -->
+                        <div id="qaqc-input-area" class="flex items-center gap-2">
+                            <textarea id="qaqc-input" class="flex-1 bg-white border-2 border-slate-300 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 auto-expand" rows="3" placeholder="Describe testing or inspection..."></textarea>
+                            <button id="qaqc-add-btn" onclick="addQAQC()" class="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition-colors"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Safety Section -->
+            <div class="section-card bg-white border-2 border-slate-200" data-section="safety">
+                <button onclick="toggleSection('safety')" class="w-full p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-safety-green flex items-center justify-center">
+                        <i class="fas fa-hard-hat text-white text-lg"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <p class="font-bold text-slate-800 uppercase text-sm">Safety</p>
+                        <p id="safety-preview" class="text-sm text-slate-500 truncate">No incidents</p>
+                    </div>
+                    <div id="safety-status" class="w-8 h-8 border border-slate-300 flex items-center justify-center">
+                        <i class="fas fa-chevron-down text-slate-400 text-xs"></i>
+                    </div>
+                </button>
+                <div class="section-content">
+                    <div class="px-4 pb-4 space-y-3 border-t border-slate-200 pt-4">
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="flex items-center gap-3 p-3 bg-safety-green/10 border-2 border-safety-green cursor-pointer">
+                                <input type="checkbox" id="no-incidents" class="w-5 h-5">
+                                <span class="font-medium text-safety-green text-sm uppercase">No Incidents</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 bg-red-50 border-2 border-red-500 cursor-pointer">
+                                <input type="checkbox" id="has-incidents" class="w-5 h-5">
+                                <span class="font-medium text-red-600 text-sm uppercase">Incident</span>
+                            </label>
+                        </div>
+                        <div id="safety-list" class="space-y-2"></div>
+                        <div class="flex items-center gap-2">
+                            <textarea id="safety-input" class="flex-1 bg-white border-2 border-slate-300 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-dot-blue auto-expand" rows="3" placeholder="Safety notes, toolbox talks..."></textarea>
+                            <button onclick="addSafetyNote()" class="px-4 py-3 bg-safety-green hover:bg-green-700 text-white font-bold transition-colors"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visitors/Deliveries Section -->
+            <div class="section-card bg-white border-2 border-slate-200" data-section="visitors">
+                <button onclick="toggleSection('visitors')" class="w-full p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-teal-600 flex items-center justify-center">
+                        <i class="fas fa-truck-loading text-white text-lg"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <p class="font-bold text-slate-800 uppercase text-sm">Visitors / Deliveries</p>
+                        <p id="visitors-preview" class="text-sm text-slate-500 truncate">None recorded</p>
+                    </div>
+                    <div id="visitors-status" class="w-8 h-8 border border-slate-300 flex items-center justify-center">
+                        <i class="fas fa-chevron-down text-slate-400 text-xs"></i>
+                    </div>
+                </button>
+                <div class="section-content">
+                    <div class="px-4 pb-4 space-y-3 border-t border-slate-200 pt-4">
+                        <!-- Toggle: Any visitors/deliveries? -->
+                        <div id="visitors-toggle-container"></div>
+                        <!-- N/A message (shown when toggle = No) -->
+                        <div id="visitors-na-message" class="hidden bg-slate-100 border border-slate-200 p-3 text-center text-sm text-slate-500">
+                            <i class="fas fa-ban mr-2"></i>Marked as N/A - No visitors or deliveries
+                        </div>
+                        <!-- Visitors/Deliveries entries list -->
+                        <div id="visitors-list" class="space-y-2"></div>
+                        <!-- Add visitor/delivery input - ALWAYS IN DOM (iOS Safari fix) -->
+                        <div id="visitors-input-area" class="flex items-center gap-2">
+                            <textarea id="visitors-input" class="flex-1 bg-white border-2 border-slate-300 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 auto-expand" rows="3" placeholder="Describe visitors, deliveries, or other activity..."></textarea>
+                            <button id="visitors-add-btn" onclick="addVisitor()" class="px-4 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold transition-colors"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Photos Section -->
+            <div class="section-card bg-white border-2 border-slate-200" data-section="photos">
+                <button onclick="toggleSection('photos')" class="w-full p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-dot-navy flex items-center justify-center">
+                        <i class="fas fa-camera text-dot-yellow text-lg"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <p class="font-bold text-slate-800 uppercase text-sm">Progress Photos</p>
+                        <p id="photos-preview" class="text-sm text-slate-500 truncate">No photos</p>
+                    </div>
+                    <div id="photos-status" class="w-8 h-8 border border-slate-300 flex items-center justify-center">
+                        <i class="fas fa-chevron-down text-slate-400 text-xs"></i>
+                    </div>
+                </button>
+                <div class="section-content">
+                    <div class="px-4 pb-4 space-y-3 border-t border-slate-200 pt-4">
+                        <button onclick="markNA('photos')" id="photos-na-btn" class="w-full p-3 bg-slate-100 border border-slate-300 text-slate-600 hover:bg-slate-200 transition-colors text-sm font-medium uppercase">
+                            <i class="fas fa-ban mr-2"></i>No Photos - Mark as N/A
+                        </button>
+                        <label class="block cursor-pointer" id="photos-upload-label">
+                            <input type="file" accept="image/*" multiple class="hidden" id="photoInput">
+                            <div class="border-2 border-dashed border-slate-300 p-6 text-center hover:border-dot-blue hover:bg-slate-50 transition-colors">
+                                <i class="fas fa-camera text-2xl text-slate-400 mb-2"></i>
+                                <p class="font-bold text-slate-600 uppercase text-sm">Tap to Add Photos</p>
+                                <p class="text-xs text-slate-400">GPS location will be captured</p>
+                            </div>
+                        </label>
+                        <div id="photos-grid" class="grid grid-cols-2 gap-2"></div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Permissions Setup Modal -->
+    <div id="permissionsModal" class="hidden fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm">
+            <div class="bg-dot-navy text-white p-6 text-center">
+                <div class="w-16 h-16 bg-dot-yellow flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-shield-alt text-dot-navy text-2xl"></i>
+                </div>
+                <p class="text-xl font-bold uppercase">Enable Permissions</p>
+                <p class="text-sm text-slate-400 mt-1">Required for voice recording & weather</p>
+            </div>
+
+            <div class="p-4 space-y-3">
+                <!-- Microphone Permission -->
+                <div id="micPermissionRow" class="bg-slate-50 border border-slate-200 p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-dot-navy flex items-center justify-center">
+                                <i class="fas fa-microphone text-dot-yellow"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-800 text-sm uppercase">Microphone</p>
+                                <p id="micPermissionStatus" class="text-xs text-slate-500">For keyboard dictation</p>
+                            </div>
+                        </div>
+                        <button id="micPermissionBtn" onclick="requestMicrophonePermission()" class="px-4 py-2 bg-dot-navy hover:bg-dot-blue text-white text-xs font-bold uppercase transition-colors">Enable</button>
+                    </div>
+                </div>
+
+                <!-- Location Permission -->
+                <div id="locPermissionRow" class="bg-slate-50 border border-slate-200 p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-safety-green flex items-center justify-center">
+                                <i class="fas fa-location-dot text-white"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-800 text-sm uppercase">Location</p>
+                                <p id="locPermissionStatus" class="text-xs text-slate-500">For weather & GPS</p>
+                            </div>
+                        </div>
+                        <button id="locPermissionBtn" onclick="requestLocationPermission()" class="px-4 py-2 bg-safety-green hover:bg-green-700 text-white text-xs font-bold uppercase transition-colors">Enable</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 pt-0 space-y-2">
+                <button id="permissionsContinueBtn" onclick="closePermissionsModal()" class="w-full p-4 bg-dot-navy hover:bg-dot-blue text-white font-bold uppercase transition-colors">Continue</button>
+                <button onclick="closePermissionsModal()" class="w-full p-3 text-slate-500 hover:text-slate-700 text-sm font-medium">Skip for now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Report Modal -->
+    <div id="cancelReportModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white max-w-sm w-full shadow-xl">
+            <div class="bg-red-600 p-4">
+                <div class="flex items-center gap-3 text-white">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3 class="font-bold uppercase tracking-wider">Cancel Report</h3>
+                </div>
+            </div>
+            <div class="p-6">
+                <p class="text-slate-700 mb-2">Are you sure you want to cancel this report?</p>
+                <p class="text-sm text-slate-500">All data will be permanently deleted. This cannot be undone.</p>
+            </div>
+            <div class="p-4 border-t border-slate-200 flex gap-3">
+                <button onclick="hideCancelReportModal()" class="flex-1 p-3 border-2 border-slate-300 text-slate-700 font-bold uppercase tracking-wider hover:bg-slate-50 transition-colors">Keep Working</button>
+                <button onclick="confirmCancelReport()" id="confirmCancelBtn" class="flex-1 p-3 bg-red-600 text-white font-bold uppercase tracking-wider hover:bg-red-700 transition-colors">Delete Report</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lock Warning Modal -->
+    <div id="lockWarningModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-white max-w-sm w-full shadow-xl">
+            <div class="bg-dot-orange p-4">
+                <div class="flex items-center gap-3 text-white">
+                    <i class="fas fa-lock"></i>
+                    <h3 class="font-bold uppercase tracking-wider">Report In Use</h3>
+                </div>
+            </div>
+            <div class="p-6">
+                <p id="lockWarningMessage" class="text-slate-700 mb-2">This report is currently being edited by another user.</p>
+                <p id="lockWarningDetails" class="text-sm text-slate-500 mb-4"></p>
+                <div class="bg-yellow-50 border border-yellow-200 p-3 rounded">
+                    <p class="text-xs text-yellow-800">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        To prevent data conflicts, only one device can edit a report at a time.
+                    </p>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-200 space-y-2">
+                <button onclick="handleLockWarningBack()" class="w-full p-3 bg-dot-navy text-white font-bold uppercase tracking-wider hover:bg-dot-blue transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>Go Back
+                </button>
+                <button id="lockForceEditBtn" onclick="handleLockWarningForceEdit()" class="w-full p-3 border-2 border-red-500 text-red-600 font-bold uppercase tracking-wider hover:bg-red-50 transition-colors">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Force Edit Anyway
+                </button>
+                <p class="text-xs text-slate-400 text-center">Force edit will take over from the other device</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offline Banner -->
+    <div id="offline-banner" class="fixed top-0 left-0 right-0 bg-yellow-500 text-yellow-900 text-center py-2 px-4 font-bold text-sm z-[9999] transform -translate-y-full transition-transform duration-300" style="display: none;">
+        <i class="fas fa-wifi-slash mr-2"></i>You are offline - Some features may be unavailable
+    </div>
+
+    <!-- Network Error Modal -->
+    <div id="network-error-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
+            <div class="text-center">
+                <i class="fas fa-wifi-slash text-4xl text-yellow-500 mb-4"></i>
+                <h3 id="network-modal-title" class="text-lg font-semibold text-gray-900 mb-2">Connection Issue</h3>
+                <p id="network-modal-message" class="text-gray-600 mb-6">Unable to submit report. Your data is safe.</p>
+            </div>
+            <div class="flex flex-col gap-3">
+                <button id="network-modal-retry" class="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">
+                    Try Again
+                </button>
+                <button id="network-modal-drafts" class="w-full py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300">
+                    Save to Drafts
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page-specific JavaScript -->
+    <script src="./js/quick-interview.js"></script>
+    <script>initPWA();</script>
+</body>
+</html>

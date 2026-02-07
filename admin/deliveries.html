@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FieldVoice Pro — Delivery Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1d32; color: #e2e8f0; margin: 0; }
+        .safety-stripe { height: 6px; background: repeating-linear-gradient(-45deg, #f59e0b, #f59e0b 10px, #0a1628 10px, #0a1628 20px); }
+        .sidebar { width: 260px; min-height: 100vh; background: #0a1628; border-right: 1px solid #1e3a5f; transition: width 0.3s; }
+        .sidebar.collapsed { width: 72px; }
+        .sidebar.collapsed .nav-text, .sidebar.collapsed .brand-text, .sidebar.collapsed .sidebar-section-label { display: none; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 12px 0; }
+        .sidebar.collapsed .nav-item i { margin-right: 0; }
+        .nav-item { display: flex; align-items: center; padding: 10px 20px; color: #94a3b8; text-decoration: none; border-radius: 8px; margin: 2px 12px; transition: all 0.2s; font-size: 0.9rem; }
+        .nav-item:hover { background: #1e3a5f; color: #f59e0b; }
+        .nav-item.active { background: #1e3a5f; color: #f59e0b; border-left: 3px solid #f59e0b; }
+        .nav-item i { width: 20px; margin-right: 12px; text-align: center; }
+        .sidebar-section-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: #475569; padding: 16px 20px 4px; }
+        .badge { padding: 3px 10px; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
+        .badge-scheduled { background: rgba(59,130,246,0.2); color: #60a5fa; }
+        .badge-intransit { background: rgba(245,158,11,0.2); color: #fbbf24; }
+        .badge-delivered { background: rgba(22,163,74,0.2); color: #22c55e; }
+        .badge-delayed { background: rgba(239,68,68,0.2); color: #f87171; }
+        .delivery-row { background: #0a1628; border: 1px solid #1e3a5f; }
+        .delivery-row:hover { background: #0d1f35; border-color: #2d4a6f; }
+        .timeline-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid; }
+        .timeline-line { width: 2px; background: #1e3a5f; min-height: 40px; }
+        .modal { display: none; }
+        .modal.active { display: flex; }
+    </style>
+</head>
+<body>
+    <div class="safety-stripe"></div>
+    <div class="flex">
+        <nav class="sidebar flex flex-col" id="sidebar">
+            <div class="p-5 flex items-center justify-between border-b border-[#1e3a5f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-gradient-to-br from-[#ea580c] to-[#f59e0b] rounded-lg flex items-center justify-center"><i class="fas fa-microphone-lines text-white text-sm"></i></div>
+                    <div class="brand-text"><div class="text-sm font-bold text-white leading-tight">FieldVoice</div><div class="text-xs text-[#f59e0b] font-semibold">PRO ADMIN</div></div>
+                </div>
+                <button onclick="document.getElementById('sidebar').classList.toggle('collapsed')" class="text-[#64748b] hover:text-[#f59e0b] transition"><i class="fas fa-bars"></i></button>
+            </div>
+            <div class="flex-1 py-4">
+                <div class="sidebar-section-label">Main</div>
+                <a href="index.html" class="nav-item"><i class="fas fa-gauge-high"></i><span class="nav-text">Command Center</span></a>
+                <a href="reports.html" class="nav-item"><i class="fas fa-file-lines"></i><span class="nav-text">Reports</span></a>
+                <a href="messages.html" class="nav-item"><i class="fas fa-comments"></i><span class="nav-text">Messages</span></a>
+                <a href="photos.html" class="nav-item"><i class="fas fa-camera"></i><span class="nav-text">Photos</span></a>
+                <a href="maps.html" class="nav-item"><i class="fas fa-map-location-dot"></i><span class="nav-text">Job Site Maps</span></a>
+                <div class="sidebar-section-label">Operations</div>
+                <a href="deliveries.html" class="nav-item active"><i class="fas fa-truck"></i><span class="nav-text">Deliveries</span></a>
+                <a href="calendar.html" class="nav-item"><i class="fas fa-calendar-days"></i><span class="nav-text">Calendar</span></a>
+                <div class="sidebar-section-label">Intelligence</div>
+                <a href="ai-insights.html" class="nav-item"><i class="fas fa-brain"></i><span class="nav-text">AI Insights</span></a>
+                <a href="users.html" class="nav-item"><i class="fas fa-users-gear"></i><span class="nav-text">Users</span></a>
+            </div>
+            <div class="p-4 border-t border-[#1e3a5f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-[#ea580c] flex items-center justify-center text-white text-sm font-bold">JK</div>
+                    <div class="nav-text"><div class="text-xs font-medium text-white">Jackson Koerner</div><div class="text-xs text-[#64748b]">Admin</div></div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="flex-1 overflow-auto" style="max-height: calc(100vh - 6px);">
+            <div class="flex items-center justify-between px-8 py-4 border-b border-[#1e3a5f] bg-[#0a1628]/50">
+                <div>
+                    <h1 class="text-xl font-bold text-white"><i class="fas fa-truck text-[#f59e0b] mr-2"></i>Delivery Tracker</h1>
+                    <p class="text-sm text-[#64748b]">Material deliveries and shipment tracking</p>
+                </div>
+                <button class="bg-[#ea580c] hover:bg-[#dc2626] text-white px-4 py-2 rounded-lg text-sm font-medium transition" onclick="openModal()">
+                    <i class="fas fa-plus mr-2"></i>New Delivery
+                </button>
+            </div>
+
+            <div class="p-8">
+                <!-- Stats -->
+                <div class="grid grid-cols-4 gap-4 mb-6">
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-[#60a5fa]">4</div>
+                        <div class="text-xs text-[#64748b]">Scheduled</div>
+                    </div>
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-[#fbbf24]">2</div>
+                        <div class="text-xs text-[#64748b]">In Transit</div>
+                    </div>
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-[#22c55e]">8</div>
+                        <div class="text-xs text-[#64748b]">Delivered Today</div>
+                    </div>
+                    <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-[#f87171]">1</div>
+                        <div class="text-xs text-[#64748b]">Delayed</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-6">
+                    <!-- Table -->
+                    <div class="col-span-2">
+                        <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-xl overflow-hidden">
+                            <div class="p-4 border-b border-[#1e3a5f] flex items-center justify-between">
+                                <h3 class="text-sm font-semibold text-white">All Deliveries</h3>
+                                <div class="flex gap-2">
+                                    <select class="bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none" id="statusFilter" onchange="filterDeliveries()">
+                                        <option value="">All Status</option>
+                                        <option value="scheduled">Scheduled</option>
+                                        <option value="intransit">In Transit</option>
+                                        <option value="delivered">Delivered</option>
+                                        <option value="delayed">Delayed</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-left text-xs text-[#64748b] border-b border-[#1e3a5f]">
+                                        <th class="px-4 py-3">ID</th>
+                                        <th class="px-4 py-3">Project</th>
+                                        <th class="px-4 py-3">Vendor</th>
+                                        <th class="px-4 py-3">Material</th>
+                                        <th class="px-4 py-3">Driver</th>
+                                        <th class="px-4 py-3">ETA</th>
+                                        <th class="px-4 py-3">Status</th>
+                                        <th class="px-4 py-3">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="deliveryTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Timeline -->
+                    <div>
+                        <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-xl p-5">
+                            <h3 class="text-sm font-semibold text-white mb-4"><i class="fas fa-timeline text-[#f59e0b] mr-2"></i>Today's Timeline</h3>
+                            <div class="space-y-0" id="timeline">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- New Delivery Modal -->
+    <div class="modal fixed inset-0 bg-black/60 items-center justify-center z-50" id="deliveryModal">
+        <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-xl w-[550px] p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-white"><i class="fas fa-truck text-[#f59e0b] mr-2"></i>New Delivery</h3>
+                <button onclick="closeModal()" class="text-[#64748b] hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-[#94a3b8] block mb-1">Project</label>
+                        <select class="w-full bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+                            <option>N-S Connector Phase 2</option>
+                            <option>CBIS Expansion</option>
+                            <option>Express Shuttle Connector</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-[#94a3b8] block mb-1">Vendor</label>
+                        <input type="text" placeholder="Company name" class="w-full bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-2 text-sm text-white placeholder-[#64748b] focus:outline-none focus:border-[#f59e0b]">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-[#94a3b8] block mb-1">Material</label>
+                        <input type="text" placeholder="e.g., 8 CY Class A Concrete" class="w-full bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-2 text-sm text-white placeholder-[#64748b] focus:outline-none focus:border-[#f59e0b]">
+                    </div>
+                    <div>
+                        <label class="text-xs text-[#94a3b8] block mb-1">Driver Phone</label>
+                        <input type="tel" placeholder="(504) 555-0000" class="w-full bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-2 text-sm text-white placeholder-[#64748b] focus:outline-none focus:border-[#f59e0b]">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-[#94a3b8] block mb-1">Driver Name</label>
+                        <input type="text" placeholder="Driver name" class="w-full bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-2 text-sm text-white placeholder-[#64748b] focus:outline-none focus:border-[#f59e0b]">
+                    </div>
+                    <div>
+                        <label class="text-xs text-[#94a3b8] block mb-1">Expected Time</label>
+                        <input type="time" class="w-full bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#f59e0b]">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs text-[#94a3b8] block mb-1">Notes</label>
+                    <textarea rows="2" placeholder="Special instructions..." class="w-full bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-2 text-sm text-white placeholder-[#64748b] focus:outline-none focus:border-[#f59e0b] resize-none"></textarea>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button onclick="closeModal()" class="px-4 py-2 rounded-lg text-sm text-[#94a3b8] hover:text-white transition">Cancel</button>
+                    <button onclick="closeModal(); alert('Delivery created!')" class="bg-[#ea580c] hover:bg-[#dc2626] text-white px-4 py-2 rounded-lg text-sm font-medium transition"><i class="fas fa-plus mr-1"></i>Create Delivery</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const deliveries = [
+            { id: 'DEL-001', project: 'CBIS Expansion', vendor: 'Boh Bros Concrete', material: '8 CY Class A Concrete (4000 PSI)', driver: 'Mike Rodriguez', phone: '(504) 555-0142', eta: '7:00 AM', status: 'delivered', ticket: '#4518' },
+            { id: 'DEL-002', project: 'CBIS Expansion', vendor: 'Boh Bros Concrete', material: '8 CY Class A Concrete (4000 PSI)', driver: 'Mike Rodriguez', phone: '(504) 555-0142', eta: '7:45 AM', status: 'delivered', ticket: '#4519' },
+            { id: 'DEL-003', project: 'CBIS Expansion', vendor: 'Boh Bros Concrete', material: '8 CY Class A Concrete (4000 PSI)', driver: 'Carlos Duarte', phone: '(504) 555-0198', eta: '8:30 AM', status: 'delivered', ticket: '#4520' },
+            { id: 'DEL-004', project: 'CBIS Expansion', vendor: 'Boh Bros Concrete', material: '8 CY Class A Concrete (4000 PSI)', driver: 'Carlos Duarte', phone: '(504) 555-0198', eta: '9:15 AM', status: 'delivered', ticket: '#4521' },
+            { id: 'DEL-005', project: 'CBIS Expansion', vendor: 'Boh Bros Concrete', material: '8 CY Class A Concrete (4000 PSI)', driver: 'Mike Rodriguez', phone: '(504) 555-0142', eta: '10:00 AM', status: 'delivered', ticket: '#4522' },
+            { id: 'DEL-006', project: 'CBIS Expansion', vendor: 'Boh Bros Concrete', material: '8 CY Class A Concrete (4000 PSI)', driver: 'Carlos Duarte', phone: '(504) 555-0198', eta: '10:45 AM', status: 'delivered', ticket: '#4523' },
+            { id: 'DEL-007', project: 'N-S Connector Phase 2', vendor: 'Gulf Coast Pipe Supply', material: '24" RCP Class III (40 LF sections x5)', driver: 'James Thibodaux', phone: '(504) 555-0276', eta: '6:30 AM', status: 'delivered', ticket: '#GC-891' },
+            { id: 'DEL-008', project: 'N-S Connector Phase 2', vendor: 'CEMEX Aggregates', material: '15 CY Crushed Limestone (#57 Stone)', driver: 'Tony Breaux', phone: '(504) 555-0331', eta: '11:30 AM', status: 'delivered', ticket: '#CM-2204' },
+            { id: 'DEL-009', project: 'Express Shuttle Connector', vendor: 'Southern Steel', material: '#5 Rebar (20\' bars x 200)', driver: 'David Nguyen', phone: '(504) 555-0415', eta: '1:30 PM', status: 'intransit', ticket: '#SS-445' },
+            { id: 'DEL-010', project: 'N-S Connector Phase 2', vendor: 'Boh Bros Concrete', material: '12 CY Class A Concrete — Headwall', driver: 'Mike Rodriguez', phone: '(504) 555-0142', eta: '2:00 PM', status: 'intransit', ticket: '#4530' },
+            { id: 'DEL-011', project: 'CBIS Expansion', vendor: 'Frischhertz Electric Supply', material: '4" PVC Conduit (10\' sticks x 50)', driver: 'Paul Hebert', phone: '(504) 555-0502', eta: '2:30 PM', status: 'scheduled', ticket: '#FE-1190' },
+            { id: 'DEL-012', project: 'Express Shuttle Connector', vendor: 'Vulcan Materials', material: '20 CY Select Fill (Lime-treated)', driver: 'Wayne Fontenot', phone: '(504) 555-0588', eta: '3:00 PM', status: 'scheduled', ticket: '#VM-7782' },
+            { id: 'DEL-013', project: 'N-S Connector Phase 2', vendor: 'United Rentals', material: 'Wacker Neuson Plate Compactor (rental)', driver: 'Delivery Team', phone: '(504) 555-0600', eta: '8:00 AM', status: 'delayed', ticket: '#UR-34521' },
+            { id: 'DEL-014', project: 'CBIS Expansion', vendor: 'Peterson Plumbing Supply', material: '8" DIP Pipe (20\' sections x 10)', driver: 'Allen Boudreaux', phone: '(504) 555-0674', eta: '3:30 PM', status: 'scheduled', ticket: '#PP-2891' },
+            { id: 'DEL-015', project: 'Express Shuttle Connector', vendor: 'CEMEX Ready Mix', material: '6 CY Flowable Fill', driver: 'Tony Breaux', phone: '(504) 555-0331', eta: '4:00 PM', status: 'scheduled', ticket: '#CM-2210' },
+        ];
+
+        function renderDeliveries(list) {
+            const tbody = document.getElementById('deliveryTable');
+            tbody.innerHTML = list.map(d => `
+                <tr class="delivery-row border-b border-[#1e3a5f]">
+                    <td class="px-4 py-3 font-mono text-xs text-[#64748b]">${d.id}</td>
+                    <td class="px-4 py-3 text-white text-xs">${d.project}</td>
+                    <td class="px-4 py-3 text-[#94a3b8] text-xs">${d.vendor}</td>
+                    <td class="px-4 py-3 text-[#94a3b8] text-xs">${d.material}</td>
+                    <td class="px-4 py-3">
+                        <div class="text-xs text-white">${d.driver}</div>
+                        <div class="text-xs text-[#64748b]">${d.phone}</div>
+                    </td>
+                    <td class="px-4 py-3 text-white text-xs">${d.eta}</td>
+                    <td class="px-4 py-3"><span class="badge badge-${d.status === 'intransit' ? 'intransit' : d.status}">${d.status === 'intransit' ? 'In Transit' : d.status.charAt(0).toUpperCase() + d.status.slice(1)}</span></td>
+                    <td class="px-4 py-3">
+                        <div class="flex gap-1">
+                            <button class="p-1.5 rounded text-[#64748b] hover:text-[#f59e0b] hover:bg-[#1e3a5f] transition text-xs" title="Send link to driver" onclick="alert('SMS link sent to ${d.driver} at ${d.phone}')"><i class="fas fa-sms"></i></button>
+                            <button class="p-1.5 rounded text-[#64748b] hover:text-[#60a5fa] hover:bg-[#1e3a5f] transition text-xs" title="Track"><i class="fas fa-location-dot"></i></button>
+                            <button class="p-1.5 rounded text-[#64748b] hover:text-[#22c55e] hover:bg-[#1e3a5f] transition text-xs" title="Mark delivered" onclick="alert('Marked ${d.id} as delivered')"><i class="fas fa-check"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderTimeline() {
+            const timelineData = [
+                { time: '6:30 AM', text: 'RCP pipe delivery — N-S Connector', status: 'delivered', icon: 'check' },
+                { time: '7:00 AM', text: 'Concrete truck #1 — CBIS', status: 'delivered', icon: 'check' },
+                { time: '7:45 AM', text: 'Concrete truck #2 — CBIS', status: 'delivered', icon: 'check' },
+                { time: '8:00 AM', text: 'Plate compactor rental — N-S Connector', status: 'delayed', icon: 'exclamation' },
+                { time: '8:30 AM', text: 'Concrete truck #3 — CBIS', status: 'delivered', icon: 'check' },
+                { time: '9:15 AM', text: 'Concrete truck #4 — CBIS', status: 'delivered', icon: 'check' },
+                { time: '10:00 AM', text: 'Concrete truck #5 — CBIS', status: 'delivered', icon: 'check' },
+                { time: '10:45 AM', text: 'Concrete truck #6 — CBIS', status: 'delivered', icon: 'check' },
+                { time: '11:30 AM', text: 'Crushed limestone — N-S Connector', status: 'delivered', icon: 'check' },
+                { time: '1:30 PM', text: 'Rebar delivery — Express Shuttle', status: 'intransit', icon: 'truck' },
+                { time: '2:00 PM', text: 'Concrete headwall — N-S Connector', status: 'intransit', icon: 'truck' },
+                { time: '2:30 PM', text: 'PVC conduit — CBIS', status: 'scheduled', icon: 'clock' },
+                { time: '3:00 PM', text: 'Select fill — Express Shuttle', status: 'scheduled', icon: 'clock' },
+                { time: '3:30 PM', text: 'DIP pipe — CBIS', status: 'scheduled', icon: 'clock' },
+                { time: '4:00 PM', text: 'Flowable fill — Express Shuttle', status: 'scheduled', icon: 'clock' },
+            ];
+            const colors = { delivered: '#22c55e', intransit: '#fbbf24', scheduled: '#60a5fa', delayed: '#f87171' };
+            const el = document.getElementById('timeline');
+            el.innerHTML = timelineData.map((t, i) => `
+                <div class="flex gap-3">
+                    <div class="flex flex-col items-center">
+                        <div class="timeline-dot" style="border-color:${colors[t.status]};background:${t.status === 'delivered' ? colors[t.status] : 'transparent'}">
+                        </div>
+                        ${i < timelineData.length - 1 ? '<div class="timeline-line flex-1"></div>' : ''}
+                    </div>
+                    <div class="pb-4">
+                        <div class="text-xs font-mono text-[#64748b]">${t.time}</div>
+                        <div class="text-xs text-[#94a3b8]">${t.text}</div>
+                        ${t.status === 'delayed' ? '<div class="text-xs text-[#f87171] mt-0.5"><i class="fas fa-exclamation-triangle mr-1"></i>Delayed — equipment not available</div>' : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterDeliveries() {
+            const status = document.getElementById('statusFilter').value;
+            const filtered = status ? deliveries.filter(d => d.status === status) : deliveries;
+            renderDeliveries(filtered);
+        }
+
+        function openModal() { document.getElementById('deliveryModal').classList.add('active'); }
+        function closeModal() { document.getElementById('deliveryModal').classList.remove('active'); }
+
+        renderDeliveries(deliveries);
+        renderTimeline();
+    </script>
+</body>
+</html>

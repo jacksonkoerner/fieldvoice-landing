@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FieldVoice Pro — Job Calendar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1d32; color: #e2e8f0; margin: 0; }
+        .safety-stripe { height: 6px; background: repeating-linear-gradient(-45deg, #f59e0b, #f59e0b 10px, #0a1628 10px, #0a1628 20px); }
+        .sidebar { width: 260px; min-height: 100vh; background: #0a1628; border-right: 1px solid #1e3a5f; transition: width 0.3s; }
+        .sidebar.collapsed { width: 72px; }
+        .sidebar.collapsed .nav-text, .sidebar.collapsed .brand-text, .sidebar.collapsed .sidebar-section-label { display: none; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 12px 0; }
+        .sidebar.collapsed .nav-item i { margin-right: 0; }
+        .nav-item { display: flex; align-items: center; padding: 10px 20px; color: #94a3b8; text-decoration: none; border-radius: 8px; margin: 2px 12px; transition: all 0.2s; font-size: 0.9rem; }
+        .nav-item:hover { background: #1e3a5f; color: #f59e0b; }
+        .nav-item.active { background: #1e3a5f; color: #f59e0b; border-left: 3px solid #f59e0b; }
+        .nav-item i { width: 20px; margin-right: 12px; text-align: center; }
+        .sidebar-section-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: #475569; padding: 16px 20px 4px; }
+        .cal-cell { min-height: 120px; border: 1px solid #1e3a5f; padding: 8px; transition: all 0.2s; cursor: pointer; }
+        .cal-cell:hover { background: #0d1f35; border-color: #2d4a6f; }
+        .cal-cell.today { border-color: #ea580c; background: rgba(234,88,12,0.05); }
+        .cal-cell.other-month { opacity: 0.3; }
+        .cal-event { padding: 3px 6px; border-radius: 4px; font-size: 0.65rem; margin-bottom: 2px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .event-pour { background: rgba(59,130,246,0.25); color: #93c5fd; border-left: 2px solid #3b82f6; }
+        .event-inspection { background: rgba(234,88,12,0.25); color: #fb923c; border-left: 2px solid #ea580c; }
+        .event-delivery { background: rgba(22,163,74,0.25); color: #86efac; border-left: 2px solid #22c55e; }
+        .event-meeting { background: rgba(168,85,247,0.25); color: #c4b5fd; border-left: 2px solid #a855f7; }
+        .view-btn { padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; border: 1px solid #1e3a5f; background: transparent; color: #94a3b8; cursor: pointer; }
+        .view-btn.active { background: #1e3a5f; color: #f59e0b; border-color: #f59e0b; }
+        .modal { display: none; }
+        .modal.active { display: flex; }
+        .day-detail { display: none; }
+        .day-detail.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="safety-stripe"></div>
+    <div class="flex">
+        <nav class="sidebar flex flex-col" id="sidebar">
+            <div class="p-5 flex items-center justify-between border-b border-[#1e3a5f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-gradient-to-br from-[#ea580c] to-[#f59e0b] rounded-lg flex items-center justify-center"><i class="fas fa-microphone-lines text-white text-sm"></i></div>
+                    <div class="brand-text"><div class="text-sm font-bold text-white leading-tight">FieldVoice</div><div class="text-xs text-[#f59e0b] font-semibold">PRO ADMIN</div></div>
+                </div>
+                <button onclick="document.getElementById('sidebar').classList.toggle('collapsed')" class="text-[#64748b] hover:text-[#f59e0b] transition"><i class="fas fa-bars"></i></button>
+            </div>
+            <div class="flex-1 py-4">
+                <div class="sidebar-section-label">Main</div>
+                <a href="index.html" class="nav-item"><i class="fas fa-gauge-high"></i><span class="nav-text">Command Center</span></a>
+                <a href="reports.html" class="nav-item"><i class="fas fa-file-lines"></i><span class="nav-text">Reports</span></a>
+                <a href="messages.html" class="nav-item"><i class="fas fa-comments"></i><span class="nav-text">Messages</span></a>
+                <a href="photos.html" class="nav-item"><i class="fas fa-camera"></i><span class="nav-text">Photos</span></a>
+                <a href="maps.html" class="nav-item"><i class="fas fa-map-location-dot"></i><span class="nav-text">Job Site Maps</span></a>
+                <div class="sidebar-section-label">Operations</div>
+                <a href="deliveries.html" class="nav-item"><i class="fas fa-truck"></i><span class="nav-text">Deliveries</span></a>
+                <a href="calendar.html" class="nav-item active"><i class="fas fa-calendar-days"></i><span class="nav-text">Calendar</span></a>
+                <div class="sidebar-section-label">Intelligence</div>
+                <a href="ai-insights.html" class="nav-item"><i class="fas fa-brain"></i><span class="nav-text">AI Insights</span></a>
+                <a href="users.html" class="nav-item"><i class="fas fa-users-gear"></i><span class="nav-text">Users</span></a>
+            </div>
+            <div class="p-4 border-t border-[#1e3a5f]">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-[#ea580c] flex items-center justify-center text-white text-sm font-bold">JK</div>
+                    <div class="nav-text"><div class="text-xs font-medium text-white">Jackson Koerner</div><div class="text-xs text-[#64748b]">Admin</div></div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="flex-1 overflow-auto" style="max-height: calc(100vh - 6px);">
+            <div class="flex items-center justify-between px-8 py-4 border-b border-[#1e3a5f] bg-[#0a1628]/50">
+                <div>
+                    <h1 class="text-xl font-bold text-white"><i class="fas fa-calendar-days text-[#f59e0b] mr-2"></i>Job Calendar</h1>
+                    <p class="text-sm text-[#64748b]">Project schedules, pours, inspections & deliveries</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select class="bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none" id="projectFilter">
+                        <option value="">All Projects</option>
+                        <option value="nsc">N-S Connector Phase 2</option>
+                        <option value="cbis">CBIS Expansion</option>
+                        <option value="esc">Express Shuttle Connector</option>
+                    </select>
+                    <div class="flex">
+                        <button class="view-btn active" onclick="setView('month', this)">Month</button>
+                        <button class="view-btn" onclick="setView('week', this)">Week</button>
+                    </div>
+                    <button class="bg-[#ea580c] hover:bg-[#dc2626] text-white px-4 py-2 rounded-lg text-sm font-medium transition" onclick="openEventModal()">
+                        <i class="fas fa-plus mr-2"></i>New Event
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-8">
+                <!-- Calendar Nav -->
+                <div class="flex items-center justify-between mb-4">
+                    <button onclick="changeMonth(-1)" class="p-2 text-[#64748b] hover:text-[#f59e0b] transition"><i class="fas fa-chevron-left"></i></button>
+                    <h2 class="text-lg font-semibold text-white" id="monthTitle"></h2>
+                    <button onclick="changeMonth(1)" class="p-2 text-[#64748b] hover:text-[#f59e0b] transition"><i class="fas fa-chevron-right"></i></button>
+                </div>
+
+                <!-- Legend -->
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="flex items-center gap-1.5 text-xs"><span class="w-3 h-3 rounded bg-[#3b82f6]"></span><span class="text-[#94a3b8]">Pours</span></div>
+                    <div class="flex items-center gap-1.5 text-xs"><span class="w-3 h-3 rounded bg-[#ea580c]"></span><span class="text-[#94a3b8]">Inspections</span></div>
+                    <div class="flex items-center gap-1.5 text-xs"><span class="w-3 h-3 rounded bg-[#22c55e]"></span><span class="text-[#94a3b8]">Deliveries</span></div>
+                    <div class="flex items-center gap-1.5 text-xs"><span class="w-3 h-3 rounded bg-[#a855f7]"></span><span class="text-[#94a3b8]">Meetings</span></div>
+                </div>
+
+                <!-- Calendar Grid -->
+                <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-xl overflow-hidden">
+                    <div class="grid grid-cols-7 text-center text-xs font-semibold text-[#64748b] border-b border-[#1e3a5f]">
+                        <div class="py-3">Sunday</div><div class="py-3">Monday</div><div class="py-3">Tuesday</div><div class="py-3">Wednesday</div><div class="py-3">Thursday</div><div class="py-3">Friday</div><div class="py-3">Saturday</div>
+                    </div>
+                    <div class="grid grid-cols-7" id="calendarGrid"></div>
+                </div>
+
+                <!-- Day Detail Panel -->
+                <div class="day-detail mt-6 bg-[#0a1628] border border-[#1e3a5f] rounded-xl p-6" id="dayDetail">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-white" id="dayDetailTitle"></h3>
+                        <button onclick="closeDayDetail()" class="text-[#64748b] hover:text-white"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="dayDetailEvents" class="space-y-3"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- New Event Modal -->
+    <div class="modal fixed inset-0 bg-black/60 items-center justify-center z-50" id="eventModal">
+        <div class="bg-[#0a1628] border border-[#1e3a5f] rounded-xl w-[500px] p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-white"><i class="fas fa-calendar-plus text-[#f59e0b] mr-2"></i>New Event</h3>
+                <button onclick="closeEventModal()" class="text-[#64748b] hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs text-[#94a3b8] block mb-1">Event Title</label>
+                    <input type="text" placeholder="e.g., Concrete Pour STA 22+00" class="w-full bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-2 text-sm text-white placeholder-[#64748b] focus:outline-none focus:border-[#f59e0b]">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-[#94a3b8] block mb-1">Date</label>
+                        <input type="date" class="w-full bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#f59e0b]">
+                    </div>
+                    <div>
+                        <label class="text-xs text-[#94a3b8] block mb-1">Time</label>
+                        <input type="time" class="w-full bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#f59e0b]">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-[#94a3b8] block mb-1">Type</label>
+                        <select class="w-full bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+                            <option>Concrete Pour</option>
+                            <option>DOT Inspection</option>
+                            <option>Material Delivery</option>
+                            <option>Safety Meeting</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-[#94a3b8] block mb-1">Project</label>
+                        <select class="w-full bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+                            <option>N-S Connector Phase 2</option>
+                            <option>CBIS Expansion</option>
+                            <option>Express Shuttle Connector</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs text-[#94a3b8] block mb-1">Notes</label>
+                    <textarea rows="3" placeholder="Additional details..." class="w-full bg-[#1e3a5f] border border-[#2d4a6f] rounded-lg px-3 py-2 text-sm text-white placeholder-[#64748b] focus:outline-none focus:border-[#f59e0b] resize-none"></textarea>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeEventModal()" class="px-4 py-2 rounded-lg text-sm text-[#94a3b8] hover:text-white transition">Cancel</button>
+                    <button onclick="closeEventModal(); alert('Event created!')" class="bg-[#ea580c] hover:bg-[#dc2626] text-white px-4 py-2 rounded-lg text-sm font-medium transition"><i class="fas fa-plus mr-1"></i>Create Event</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentYear, currentMonth;
+        const today = new Date();
+        currentYear = today.getFullYear();
+        currentMonth = today.getMonth();
+
+        // Events data - keyed by "YYYY-MM-DD"
+        function getEvents() {
+            const y = currentYear, m = currentMonth;
+            const pad = d => String(d).padStart(2, '0');
+            const key = (d) => `${y}-${pad(m+1)}-${pad(d)}`;
+            const events = {};
+            const addEvent = (day, type, title, time, project, details) => {
+                const k = key(day);
+                if (!events[k]) events[k] = [];
+                events[k].push({ type, title, time, project, details });
+            };
+
+            // Get today's date
+            const td = today.getDate();
+
+            // Past events
+            addEvent(Math.max(1, td-10), 'pour', 'Concrete Pour — Headwall DS-4', '7:00 AM', 'N-S Connector', '12 CY Class A concrete at STA 6+75');
+            addEvent(Math.max(1, td-10), 'delivery', 'RCP Pipe Delivery', '6:30 AM', 'N-S Connector', '24" RCP Class III, 200 LF');
+            addEvent(Math.max(1, td-9), 'inspection', 'DOT Pre-Pour Inspection', '9:00 AM', 'CBIS Expansion', 'Rebar and form check for taxiway shoulder');
+            addEvent(Math.max(1, td-8), 'meeting', 'Weekly Safety Meeting', '7:00 AM', 'All Projects', 'Trenching & excavation safety — OSHA 29 CFR 1926.652');
+            addEvent(Math.max(1, td-7), 'delivery', 'Lime Delivery', '8:00 AM', 'Express Shuttle', 'Quicklime for subgrade treatment');
+            addEvent(Math.max(1, td-6), 'pour', 'Taxiway Shoulder Pour', '6:30 AM', 'CBIS Expansion', '48 CY Class A concrete, STA 12+50 to 14+00');
+            addEvent(Math.max(1, td-6), 'delivery', 'Concrete (6 trucks)', '7:00 AM', 'CBIS Expansion', '48 CY total, Boh Bros Concrete');
+            addEvent(Math.max(1, td-5), 'inspection', 'QA/QC Compaction Testing', '2:00 PM', 'Express Shuttle', 'Nuclear gauge testing on lime-treated subgrade');
+
+            // Today's events
+            addEvent(td, 'pour', 'Concrete Pour — STA 22+00', '7:00 AM', 'N-S Connector', '15 CY for curb and gutter, Boh Bros');
+            addEvent(td, 'inspection', 'DOT Drainage Inspection', '10:00 AM', 'N-S Connector', 'Storm drain installation review STA 8+25 to 10+50');
+            addEvent(td, 'delivery', 'Rebar Delivery', '1:30 PM', 'Express Shuttle', '#5 rebar, 200 bars, Southern Steel');
+            addEvent(td, 'meeting', 'PM Coordination Call', '3:00 PM', 'All Projects', 'Weekly project manager coordination meeting');
+
+            // Future events
+            addEvent(Math.min(28, td+1), 'pour', 'Sidewalk Pour STA 10+00', '7:00 AM', 'N-S Connector', '20 CY Class A concrete');
+            addEvent(Math.min(28, td+1), 'delivery', 'PVC Conduit Delivery', '9:00 AM', 'CBIS Expansion', '4" PVC x 50 sticks, Frischhertz');
+            addEvent(Math.min(28, td+2), 'inspection', 'FAA Safety Inspection', '9:00 AM', 'CBIS Expansion', 'Quarterly airfield safety compliance review');
+            addEvent(Math.min(28, td+2), 'delivery', 'Select Fill (20 CY)', '8:00 AM', 'Express Shuttle', 'Lime-treated select fill, Vulcan Materials');
+            addEvent(Math.min(28, td+3), 'meeting', 'Weekly Safety Meeting', '7:00 AM', 'All Projects', 'Fall protection & scaffolding safety');
+            addEvent(Math.min(28, td+4), 'pour', 'Duct Bank Concrete Encase', '7:30 AM', 'CBIS Expansion', '8 CY flowable fill for conduit encasement');
+            addEvent(Math.min(28, td+5), 'inspection', 'DOT Progress Review', '10:00 AM', 'N-S Connector', 'Monthly progress inspection with DOTD engineer');
+            addEvent(Math.min(28, td+5), 'delivery', 'DIP Pipe Delivery', '7:00 AM', 'CBIS Expansion', '8" DIP, 10 sections, Peterson Plumbing Supply');
+            addEvent(Math.min(28, td+7), 'pour', 'Storm Drain Headwall #2', '7:00 AM', 'N-S Connector', '10 CY at DS-5, STA 11+25');
+            addEvent(Math.min(28, td+7), 'meeting', 'Contractor Progress Meeting', '2:00 PM', 'All Projects', 'Monthly prime/sub coordination');
+            addEvent(Math.min(28, td+8), 'delivery', 'Concrete Trucks (x8)', '6:30 AM', 'N-S Connector', 'Pavement section STA 18+00 to 20+00');
+            addEvent(Math.min(28, td+10), 'inspection', 'SWPPP Inspection', '8:00 AM', 'Express Shuttle', 'Stormwater pollution prevention plan compliance');
+            addEvent(Math.min(28, td+12), 'pour', 'Pavement Section 3', '6:00 AM', 'N-S Connector', '65 CY concrete pavement');
+
+            return events;
+        }
+
+        function renderCalendar() {
+            const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            document.getElementById('monthTitle').textContent = `${monthNames[currentMonth]} ${currentYear}`;
+
+            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+            const events = getEvents();
+            const pad = d => String(d).padStart(2, '0');
+
+            let html = '';
+            // Previous month days
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const d = daysInPrevMonth - i;
+                html += `<div class="cal-cell other-month"><div class="text-xs text-[#64748b] mb-1">${d}</div></div>`;
+            }
+
+            // Current month days
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateKey = `${currentYear}-${pad(currentMonth+1)}-${pad(d)}`;
+                const isToday = d === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+                const dayEvents = events[dateKey] || [];
+                const typeClass = { pour: 'event-pour', inspection: 'event-inspection', delivery: 'event-delivery', meeting: 'event-meeting' };
+
+                html += `<div class="cal-cell ${isToday ? 'today' : ''}" onclick="showDayDetail('${dateKey}', ${d})">
+                    <div class="text-xs ${isToday ? 'text-[#ea580c] font-bold' : 'text-[#94a3b8]'} mb-1">${d}${isToday ? ' <span class="text-[0.6rem] bg-[#ea580c] text-white px-1.5 py-0.5 rounded ml-1">TODAY</span>' : ''}</div>
+                    ${dayEvents.slice(0, 3).map(e => `<div class="cal-event ${typeClass[e.type]}">${e.time.split(' ')[0]} ${e.title}</div>`).join('')}
+                    ${dayEvents.length > 3 ? `<div class="text-xs text-[#64748b] mt-1">+${dayEvents.length - 3} more</div>` : ''}
+                </div>`;
+            }
+
+            // Next month days
+            const totalCells = firstDay + daysInMonth;
+            const remaining = (7 - (totalCells % 7)) % 7;
+            for (let d = 1; d <= remaining; d++) {
+                html += `<div class="cal-cell other-month"><div class="text-xs text-[#64748b] mb-1">${d}</div></div>`;
+            }
+
+            document.getElementById('calendarGrid').innerHTML = html;
+        }
+
+        function showDayDetail(dateKey, day) {
+            const events = getEvents();
+            const dayEvents = events[dateKey] || [];
+            const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            document.getElementById('dayDetailTitle').textContent = `${monthNames[currentMonth]} ${day}, ${currentYear}`;
+
+            const typeIcons = { pour: 'fas fa-cube', inspection: 'fas fa-clipboard-check', delivery: 'fas fa-truck', meeting: 'fas fa-users' };
+            const typeColors = { pour: '#3b82f6', inspection: '#ea580c', delivery: '#22c55e', meeting: '#a855f7' };
+
+            if (dayEvents.length === 0) {
+                document.getElementById('dayDetailEvents').innerHTML = '<div class="text-sm text-[#64748b] text-center py-8"><i class="fas fa-calendar-xmark text-2xl mb-2 block"></i>No events scheduled</div>';
+            } else {
+                document.getElementById('dayDetailEvents').innerHTML = dayEvents.map(e => `
+                    <div class="flex items-start gap-4 bg-[#0d1f35] border border-[#1e3a5f] rounded-lg p-4">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style="background:${typeColors[e.type]}20">
+                            <i class="${typeIcons[e.type]}" style="color:${typeColors[e.type]}"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                                <div class="text-sm font-medium text-white">${e.title}</div>
+                                <div class="text-xs text-[#64748b]">${e.time}</div>
+                            </div>
+                            <div class="text-xs text-[#f59e0b] mt-0.5">${e.project}</div>
+                            <div class="text-xs text-[#94a3b8] mt-1">${e.details}</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('dayDetail').classList.add('active');
+        }
+
+        function closeDayDetail() { document.getElementById('dayDetail').classList.remove('active'); }
+        function changeMonth(dir) { currentMonth += dir; if (currentMonth > 11) { currentMonth = 0; currentYear++; } if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(); closeDayDetail(); }
+        function setView(view, btn) { document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+        function openEventModal() { document.getElementById('eventModal').classList.add('active'); }
+        function closeEventModal() { document.getElementById('eventModal').classList.remove('active'); }
+
+        renderCalendar();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10 Built-In Field Tools — FieldVoice Pro</title>
+    <meta name="description" content="Compass, distance measure, maps, calculator, level, dB meter, and more — all built into FieldVoice Pro.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030712;
+            --bg2: #0a0f1a;
+            --accent: #f97316;
+            --accent2: #fb923c;
+            --green: #10b981;
+            --blue: #3b82f6;
+            --red: #ef4444;
+            --white: #f8fafc;
+            --gray: #94a3b8;
+            --gray2: #64748b;
+            --dim: #1e293b;
+            --border: rgba(148,163,184,0.08);
+        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        html{scroll-behavior:smooth}
+        body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--white);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+        .container{max-width:1200px;margin:0 auto;padding:0 24px}
+
+        /* ===== NAV ===== */
+        .nav{position:fixed;top:0;width:100%;z-index:100;padding:0 24px;transition:all .3s;background:rgba(3,7,18,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+        .nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:72px}
+        .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--white);font-weight:800;font-size:1.25rem}
+        .nav-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),#ea580c);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+        .nav-links{display:none;gap:32px;align-items:center}
+        .nav-links a{color:var(--gray);text-decoration:none;font-size:.9rem;font-weight:500;transition:color .2s}
+        .nav-links a:hover,.nav-links a.active{color:var(--white)}
+        .nav-cta{background:var(--accent);color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:.9rem;transition:all .2s}
+        .nav-cta:hover{transform:translateY(-1px);box-shadow:0 8px 25px rgba(249,115,22,.35)}
+        .mobile-menu-btn{display:flex;flex-direction:column;gap:5px;cursor:pointer;padding:8px;background:none;border:none}
+        .mobile-menu-btn span{display:block;width:22px;height:2px;background:var(--gray);border-radius:2px}
+        @media(min-width:768px){.nav-links{display:flex}.mobile-menu-btn{display:none}}
+        .mobile-menu{position:fixed;top:72px;left:0;right:0;background:rgba(3,7,18,0.97);backdrop-filter:blur(20px);padding:24px;display:none;flex-direction:column;gap:16px;border-bottom:1px solid var(--border);z-index:99}
+        .mobile-menu.open{display:flex}
+        .mobile-menu a{color:var(--gray);text-decoration:none;font-size:1rem;font-weight:500;padding:8px 0}
+
+        /* ===== SHARED ===== */
+        .sec-pad{padding:100px 0}
+        .highlight-text{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .hazard-stripe{height:4px;background:repeating-linear-gradient(-45deg,var(--accent),var(--accent) 6px,#1e293b 6px,#1e293b 12px);width:60px;border-radius:2px}
+        .btn{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:10px;font-weight:700;font-size:1rem;text-decoration:none;transition:all .25s;border:none;cursor:pointer}
+        .btn-accent{background:var(--accent);color:#fff;box-shadow:0 4px 20px rgba(249,115,22,.25)}
+        .btn-accent:hover{transform:translateY(-2px);box-shadow:0 12px 35px rgba(249,115,22,.35)}
+        .btn-ghost{background:rgba(255,255,255,.04);color:var(--white);border:1px solid rgba(255,255,255,.1)}
+        .btn-ghost:hover{background:rgba(255,255,255,.08)}
+        .reveal{opacity:0;transform:translateY(28px);transition:all .7s cubic-bezier(.4,0,.2,1)}
+        .reveal.visible{opacity:1;transform:translateY(0)}
+
+        /* ===== HERO ===== */
+        .tools-hero{padding:120px 0 60px;text-align:center;position:relative;overflow:hidden}
+        .tools-hero::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:800px;height:400px;background:radial-gradient(ellipse,rgba(249,115,22,.08),transparent 70%);pointer-events:none}
+        .tools-hero .hazard-stripe{margin:0 auto 20px}
+        .tools-hero h1{font-size:clamp(2.5rem,5vw,4rem);font-weight:900;margin-bottom:16px;letter-spacing:-.03em}
+        .tools-hero p{color:var(--gray);font-size:1.15rem;max-width:600px;margin:0 auto;line-height:1.7}
+        .tools-hero .tool-count{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:100px;font-size:.8rem;font-weight:600;color:var(--accent);background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.15);margin-bottom:24px}
+
+        /* ===== TOOL SECTIONS ===== */
+        .tool-section{padding:80px 0;border-bottom:1px solid var(--border)}
+        .tool-section:last-of-type{border-bottom:none}
+        .tool-grid{display:grid;gap:48px;align-items:center}
+        @media(min-width:768px){.tool-grid{grid-template-columns:1fr 1fr}}
+        .tool-grid.reverse .tool-info{order:2}
+        @media(max-width:767px){.tool-grid.reverse .tool-info{order:0}}
+
+        .tool-info .tool-number{font-size:.75rem;font-weight:700;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+        .tool-info h3{font-size:clamp(1.5rem,3vw,2rem);font-weight:800;margin-bottom:12px;line-height:1.2}
+        .tool-info p{color:var(--gray);font-size:1rem;line-height:1.7;margin-bottom:16px}
+        .tool-tags{display:flex;flex-wrap:wrap;gap:8px}
+        .tool-tag{padding:4px 12px;border-radius:6px;font-size:.75rem;font-weight:600;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--gray)}
+
+        /* ===== TOOL DEMOS ===== */
+        .tool-demo{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:20px;padding:40px;display:flex;align-items:center;justify-content:center;min-height:300px;position:relative;overflow:hidden}
+        .tool-demo::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(249,115,22,.03),transparent 60%);pointer-events:none}
+
+        /* 1. COMPASS */
+        .compass-container{position:relative;width:220px;height:220px}
+        .compass-ring{width:220px;height:220px;border-radius:50%;border:3px solid rgba(255,255,255,.08);position:relative;animation:compassRotate 12s ease-in-out infinite}
+        @keyframes compassRotate{0%{transform:rotate(0deg)}25%{transform:rotate(15deg)}50%{transform:rotate(-8deg)}75%{transform:rotate(5deg)}100%{transform:rotate(0deg)}}
+        .compass-dirs{position:absolute;inset:0}
+        .compass-dir{position:absolute;font-weight:800;font-size:.85rem;color:var(--gray)}
+        .compass-dir.n{top:8px;left:50%;transform:translateX(-50%);color:var(--accent);font-size:1rem}
+        .compass-dir.s{bottom:8px;left:50%;transform:translateX(-50%)}
+        .compass-dir.e{right:10px;top:50%;transform:translateY(-50%)}
+        .compass-dir.w{left:10px;top:50%;transform:translateY(-50%)}
+        .compass-needle{position:absolute;top:50%;left:50%;width:4px;height:90px;transform:translate(-50%,-100%);transform-origin:bottom center}
+        .compass-needle::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:90px solid var(--accent)}
+        .compass-needle::after{content:'';position:absolute;top:90px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:70px solid var(--gray2)}
+        .compass-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:var(--white);box-shadow:0 0 10px rgba(249,115,22,.3);z-index:2}
+        .compass-degree{position:absolute;top:50%;left:50%;transform:translate(-50%,40px);font-size:1.8rem;font-weight:900;color:var(--white);text-align:center}
+        .compass-degree small{display:block;font-size:.7rem;color:var(--gray);font-weight:500}
+
+        /* Tick marks */
+        .compass-ticks{position:absolute;inset:0}
+        .compass-tick{position:absolute;top:0;left:50%;width:2px;height:10px;background:rgba(255,255,255,.15);transform-origin:bottom center}
+
+        /* 2. DISTANCE */
+        .distance-demo{width:100%;max-width:280px}
+        .distance-map{width:100%;height:180px;background:linear-gradient(135deg,#0d1b2a,#1b2838);border-radius:12px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+        .distance-map::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 29px,rgba(255,255,255,.03) 30px),repeating-linear-gradient(90deg,transparent,transparent 29px,rgba(255,255,255,.03) 30px)}
+        .map-pin{position:absolute;width:14px;height:14px;border-radius:50%;border:3px solid var(--accent);background:rgba(249,115,22,.3);animation:pinPulse 2s ease infinite}
+        .map-pin-a{top:30%;left:20%}
+        .map-pin-b{top:65%;right:25%;animation-delay:.5s}
+        @keyframes pinPulse{0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.4)}50%{box-shadow:0 0 0 8px rgba(249,115,22,0)}}
+        .map-line{position:absolute;top:37%;left:27%;width:130px;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));transform:rotate(28deg);transform-origin:left center}
+        .map-line::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:6px;height:6px;border-radius:50%;background:var(--accent)}
+        .distance-readout{text-align:center;margin-top:16px;font-size:2rem;font-weight:900;color:var(--accent)}
+        .distance-readout small{display:block;font-size:.8rem;color:var(--gray);font-weight:500}
+
+        /* 3. MAPS */
+        .maps-demo{width:100%;max-width:300px}
+        .maps-tabs{display:flex;gap:4px;margin-bottom:12px}
+        .maps-tab{flex:1;padding:8px 4px;text-align:center;font-size:.75rem;font-weight:700;border-radius:8px;cursor:pointer;transition:all .3s;color:var(--gray);background:rgba(255,255,255,.03);border:1px solid var(--border)}
+        .maps-tab.active{background:rgba(249,115,22,.1);color:var(--accent);border-color:rgba(249,115,22,.2)}
+        .maps-preview{width:100%;height:200px;border-radius:12px;overflow:hidden;position:relative;border:1px solid rgba(255,255,255,.06)}
+        .maps-layer{position:absolute;inset:0;transition:opacity .4s;display:flex;align-items:center;justify-content:center}
+        .maps-layer.hidden{opacity:0;pointer-events:none}
+        .maps-radar{background:radial-gradient(circle,rgba(16,185,129,.1),rgba(16,185,129,.02));position:relative}
+        .radar-sweep{position:absolute;top:50%;left:50%;width:160px;height:160px;border-radius:50%;border:1px solid rgba(16,185,129,.15)}
+        .radar-sweep::before{content:'';position:absolute;top:0;left:50%;width:50%;height:50%;background:linear-gradient(0deg,transparent,rgba(16,185,129,.15));transform-origin:bottom left;animation:radarSweep 3s linear infinite;border-radius:0 100% 0 0}
+        @keyframes radarSweep{to{transform:rotate(360deg)}}
+        .radar-ring{position:absolute;top:50%;left:50%;border-radius:50%;border:1px solid rgba(16,185,129,.08)}
+        .radar-ring:nth-child(2){width:100px;height:100px;transform:translate(-50%,-50%)}
+        .radar-ring:nth-child(3){width:50px;height:50px;transform:translate(-50%,-50%)}
+        .radar-dot{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:6px;height:6px;border-radius:50%;background:var(--green)}
+        .maps-airspace{background:linear-gradient(135deg,#0c1929,#162033)}
+        .airspace-grid{font-size:.65rem;color:rgba(59,130,246,.3);line-height:2;text-align:center;letter-spacing:1px}
+        .airspace-zone{position:absolute;border:2px dashed rgba(59,130,246,.2);border-radius:8px;padding:4px 8px;font-size:.65rem;color:var(--blue);font-weight:700}
+        .airspace-zone:nth-child(2){top:20%;left:15%;width:100px;height:60px}
+        .airspace-zone:nth-child(3){bottom:25%;right:20%;width:80px;height:50px}
+        .maps-satellite{background:linear-gradient(135deg,#1a2332,#0d1a26)}
+        .satellite-terrain{width:100%;height:100%;display:flex;flex-wrap:wrap;gap:2px;padding:8px;align-content:start}
+        .terrain-block{width:20px;height:20px;border-radius:3px;opacity:.3}
+
+        /* 4. CALCULATOR */
+        .calc-demo{width:100%;max-width:260px}
+        .calc-display{background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:right;margin-bottom:12px}
+        .calc-display .calc-expr{font-size:.8rem;color:var(--gray2);min-height:20px}
+        .calc-display .calc-result{font-size:2rem;font-weight:800;color:var(--white)}
+        .calc-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+        .calc-btn{padding:14px 8px;border-radius:8px;font-size:.95rem;font-weight:600;text-align:center;cursor:pointer;transition:all .15s;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--white);user-select:none}
+        .calc-btn:hover{background:rgba(255,255,255,.06);transform:scale(1.02)}
+        .calc-btn:active{transform:scale(.97)}
+        .calc-btn.op{color:var(--accent);background:rgba(249,115,22,.06)}
+        .calc-btn.eq{background:var(--accent);color:#fff;border-color:var(--accent)}
+        .calc-btn.fn{color:var(--gray);font-size:.8rem}
+        .calc-label{text-align:center;margin-top:12px;font-size:.75rem;color:var(--gray2)}
+
+        /* 5. SLOPE */
+        .slope-demo{width:100%;max-width:280px}
+        .slope-diagram{position:relative;height:200px;display:flex;align-items:flex-end}
+        .slope-ground{width:100%;height:3px;background:var(--gray2)}
+        .slope-line{position:absolute;bottom:0;left:10%;width:220px;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));transform-origin:left bottom;transition:transform .5s}
+        .slope-arc{position:absolute;bottom:0;left:10%;width:60px;height:60px;border:2px solid rgba(249,115,22,.3);border-radius:50%;clip-path:polygon(50% 50%,100% 50%,100% 0,50% 0)}
+        .slope-label{position:absolute;bottom:0;left:calc(10% + 70px);background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);border-radius:8px;padding:6px 14px;font-size:1.1rem;font-weight:800;color:var(--accent);transition:all .5s}
+        .slope-readouts{display:flex;gap:16px;justify-content:center;margin-top:20px}
+        .slope-readout{text-align:center}
+        .slope-readout .val{font-size:1.1rem;font-weight:800;color:var(--white)}
+        .slope-readout .lbl{font-size:.7rem;color:var(--gray)}
+        .slope-slider{width:100%;margin-top:16px;-webkit-appearance:none;appearance:none;height:6px;background:rgba(255,255,255,.06);border-radius:3px;outline:none}
+        .slope-slider::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 10px rgba(249,115,22,.3)}
+
+        /* 6. LEVEL */
+        .level-demo{width:100%;max-width:280px;text-align:center}
+        .level-tube{width:240px;height:60px;border-radius:30px;background:linear-gradient(180deg,rgba(16,185,129,.05),rgba(16,185,129,.02));border:2px solid rgba(16,185,129,.15);margin:0 auto;position:relative;overflow:hidden}
+        .level-marks{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;gap:20px}
+        .level-mark{width:2px;height:20px;background:rgba(16,185,129,.2);border-radius:1px}
+        .level-mark.center{background:rgba(16,185,129,.5);height:30px}
+        .level-bubble{position:absolute;top:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(16,185,129,.4),rgba(16,185,129,.15));border:2px solid rgba(16,185,129,.3);transition:left .3s ease-out;box-shadow:0 0 20px rgba(16,185,129,.1)}
+        .level-reading{font-size:2.2rem;font-weight:900;margin-top:20px;color:var(--green)}
+        .level-reading small{font-size:.8rem;color:var(--gray);font-weight:500;display:block}
+        .level-status{font-size:.8rem;font-weight:700;margin-top:8px;padding:4px 12px;border-radius:20px;display:inline-block}
+        .level-status.ok{color:var(--green);background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.15)}
+
+        /* 7. dB METER */
+        .db-demo{width:100%;max-width:260px;text-align:center}
+        .db-bars{display:flex;gap:4px;align-items:flex-end;justify-content:center;height:120px;margin-bottom:16px}
+        .db-bar{width:12px;border-radius:4px 4px 0 0;transition:height .15s ease-out}
+        .db-reading{font-size:2.5rem;font-weight:900}
+        .db-reading small{font-size:.8rem;color:var(--gray);font-weight:500;display:block}
+        .db-scale{display:flex;justify-content:space-between;margin-top:8px;font-size:.65rem;color:var(--gray2)}
+
+        /* 8. TIMER */
+        .timer-demo{text-align:center;width:100%;max-width:260px}
+        .timer-display{font-size:3.5rem;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:2px;margin-bottom:8px;color:var(--white)}
+        .timer-ms{font-size:1.2rem;color:var(--accent);font-weight:700}
+        .timer-btns{display:flex;gap:10px;justify-content:center;margin-top:20px}
+        .timer-btn{width:56px;height:56px;border-radius:50%;border:2px solid var(--border);background:rgba(255,255,255,.03);display:flex;align-items:center;justify-content:center;font-size:1.2rem;cursor:pointer;transition:all .2s;color:var(--white)}
+        .timer-btn:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.15)}
+        .timer-btn.start{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.08);color:var(--green)}
+        .timer-btn.stop{border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:var(--red)}
+        .timer-laps{margin-top:16px;max-height:80px;overflow-y:auto}
+        .timer-lap{display:flex;justify-content:space-between;padding:4px 0;font-size:.8rem;color:var(--gray);border-bottom:1px solid var(--border)}
+
+        /* 9. FLASHLIGHT */
+        .flash-demo{text-align:center;width:100%;max-width:260px;position:relative}
+        .flash-icon{width:80px;height:80px;border-radius:50%;border:3px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 20px;transition:all .3s;cursor:pointer}
+        .flash-icon.on{border-color:var(--accent);background:rgba(249,115,22,.15);box-shadow:0 0 60px rgba(249,115,22,.3)}
+        .flash-glow{position:absolute;top:-20px;left:50%;transform:translateX(-50%);width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,200,.08),transparent 70%);pointer-events:none;opacity:0;transition:opacity .3s}
+        .flash-glow.on{opacity:1}
+        .flash-modes{display:flex;gap:8px;justify-content:center;margin-top:16px}
+        .flash-mode{padding:8px 16px;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--gray)}
+        .flash-mode.active{border-color:rgba(249,115,22,.3);background:rgba(249,115,22,.08);color:var(--accent)}
+
+        /* 10. QR */
+        .qr-demo{text-align:center;width:100%;max-width:260px}
+        .qr-viewfinder{width:200px;height:200px;margin:0 auto;position:relative;border:2px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;background:rgba(0,0,0,.3)}
+        .qr-corner{position:absolute;width:30px;height:30px;border-color:var(--accent);border-style:solid;border-width:0}
+        .qr-corner.tl{top:10px;left:10px;border-top-width:3px;border-left-width:3px;border-radius:4px 0 0 0}
+        .qr-corner.tr{top:10px;right:10px;border-top-width:3px;border-right-width:3px;border-radius:0 4px 0 0}
+        .qr-corner.bl{bottom:10px;left:10px;border-bottom-width:3px;border-left-width:3px;border-radius:0 0 0 4px}
+        .qr-corner.br{bottom:10px;right:10px;border-bottom-width:3px;border-right-width:3px;border-radius:0 0 4px 0}
+        .qr-scanline{position:absolute;left:10px;right:10px;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:qrScan 2.5s ease-in-out infinite;box-shadow:0 0 15px rgba(249,115,22,.3)}
+        @keyframes qrScan{0%,100%{top:15px}50%{top:calc(100% - 17px)}}
+        .qr-label{margin-top:16px;font-size:.85rem;color:var(--gray)}
+        .qr-code-mini{width:80px;height:80px;margin:12px auto;display:grid;grid-template-columns:repeat(8,1fr);gap:1px}
+        .qr-cell{border-radius:1px}
+        .qr-cell.b{background:var(--white)}
+        .qr-cell.w{background:transparent}
+
+        /* ===== CTA ===== */
+        .cta{text-align:center;padding:120px 24px;position:relative;overflow:hidden}
+        .cta-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:var(--accent);filter:blur(200px);opacity:.06;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+        .cta h2{font-size:clamp(2rem,5vw,3rem);font-weight:900;margin-bottom:12px;position:relative;z-index:1}
+        .cta p{color:var(--gray);font-size:1.1rem;margin-bottom:32px;position:relative;z-index:1;max-width:500px;margin-left:auto;margin-right:auto}
+
+        /* ===== FOOTER ===== */
+        .footer{border-top:1px solid var(--border);padding:60px 0 30px;background:rgba(0,0,0,.3)}
+        .footer-grid{display:grid;gap:40px;margin-bottom:40px}
+        @media(min-width:768px){.footer-grid{grid-template-columns:2fr 1fr 1fr 1fr}}
+        .footer-brand p{color:var(--gray);font-size:.9rem;line-height:1.7;margin-top:12px}
+        .footer-col h4{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--white);margin-bottom:16px}
+        .footer-col a{display:block;color:var(--gray);text-decoration:none;font-size:.9rem;margin-bottom:10px;transition:color .2s}
+        .footer-col a:hover{color:var(--accent)}
+        .footer-bottom{border-top:1px solid var(--border);padding-top:24px;text-align:center;color:var(--gray2);font-size:.85rem}
+
+        /* ===== MOBILE ===== */
+        @media(max-width:767px){
+            .tools-hero{padding:100px 0 40px}
+            .sec-pad{padding:60px 0}
+            .tool-section{padding:60px 0}
+            .tool-demo{padding:24px;min-height:250px}
+            .tool-info h3{font-size:1.5rem}
+            .cta{padding:80px 24px}
+        }
+        @media(prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01ms!important}}
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+    <div class="nav-inner">
+        <a href="index.html" class="nav-logo">
+            <div class="nav-logo-icon">🎙️</div>
+            FieldVoice Pro
+        </a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="demo.html">Demo</a>
+            <a href="tools.html" class="active">Tools</a>
+            <a href="index.html#pricing">Pricing</a>
+            <a href="#" class="nav-cta">Start Free Trial</a>
+        </div>
+        <button class="mobile-menu-btn" onclick="document.querySelector('.mobile-menu').classList.toggle('open')">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+</nav>
+<div class="mobile-menu">
+    <a href="index.html">Home</a>
+    <a href="demo.html">Demo</a>
+    <a href="tools.html">Tools</a>
+    <a href="index.html#pricing">Pricing</a>
+</div>
+
+<!-- HERO -->
+<section class="tools-hero">
+    <div class="container">
+        <div class="hazard-stripe"></div>
+        <div class="tool-count">🧰 Built-In</div>
+        <h1>10 <span class="highlight-text">Field Tools.</span><br>Zero Extra Apps.</h1>
+        <p>Every tool a construction inspector needs, built right into FieldVoice Pro. No switching between apps. No extra subscriptions.</p>
+    </div>
+</section>
+
+<!-- TOOL 1: COMPASS -->
+<section class="tool-section" id="compass">
+    <div class="container">
+        <div class="tool-grid reveal">
+            <div class="tool-info">
+                <div class="tool-number">Tool 01</div>
+                <h3>🧭 Digital Compass</h3>
+                <p>Full 360° compass with real-time heading. Automatically tags your report entries with orientation data. Essential for documenting road alignments, pipe runs, and structure orientations.</p>
+                <div class="tool-tags">
+                    <span class="tool-tag">Real-time heading</span>
+                    <span class="tool-tag">Auto-tag reports</span>
+                    <span class="tool-tag">Calibration</span>
+                </div>
+            </div>
+            <div class="tool-demo">
+                <div class="compass-container">
+                    <div class="compass-ring">
+                        <div class="compass-dirs">
+                            <span class="compass-dir n">N</span>
+                            <span class="compass-dir s">S</span>
+                            <span class="compass-dir e">E</span>
+                            <span class="compass-dir w">W</span>
+                        </div>
+                        <div class="compass-ticks" id="compassTicks"></div>
+                        <div class="compass-needle"></div>
+                        <div class="compass-center"></div>
+                    </div>
+                    <div class="compass-degree"><span id="compassDeg">347</span>°<small>NNW</small></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TOOL 2: DISTANCE -->
+<section class="tool-section" id="distance">
+    <div class="container">
+        <div class="tool-grid reverse reveal">
+            <div class="tool-info">
+                <div class="tool-number">Tool 02</div>
+                <h3>📏 Distance Measure</h3>
+                <p>Tap two points on the map to measure distance. GPS-powered accuracy for quick field measurements. Perfect for documenting station-to-station distances, setback measurements, and area calculations.</p>
+                <div class="tool-tags">
+                    <span class="tool-tag">GPS-powered</span>
+                    <span class="tool-tag">Point-to-point</span>
+                    <span class="tool-tag">Multi-unit</span>
+                </div>
+            </div>
+            <div class="tool-demo">
+                <div class="distance-demo">
+                    <div class="distance-map">
+                        <div class="map-pin map-pin-a"></div>
+                        <div class="map-pin map-pin-b"></div>
+                        <div class="map-line"></div>
+                    </div>
+                    <div class="distance-readout">247.3 ft<small>Between markers A → B</small></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TOOL 3: MAPS -->
+<section class="tool-section" id="maps">
+    <div class="container">
+        <div class="tool-grid reveal">
+            <div class="tool-info">
+                <div class="tool-number">Tool 03</div>
+                <h3>🗺️ Maps: Radar, Airspace & Satellite</h3>
+                <p>Three map layers in one tool. Weather radar for planning around storms, airspace maps for drone operation compliance, and satellite imagery for site documentation.</p>
+                <div class="tool-tags">
+                    <span class="tool-tag">Weather radar</span>
+                    <span class="tool-tag">Airspace zones</span>
+                    <span class="tool-tag">Satellite</span>
+                </div>
+            </div>
+            <div class="tool-demo">
+                <div class="maps-demo">
+                    <div class="maps-tabs">
+                        <div class="maps-tab active" data-layer="radar">Radar</div>
+                        <div class="maps-tab" data-layer="airspace">Airspace</div>
+                        <div class="maps-tab" data-layer="satellite">Satellite</div>
+                    </div>
+                    <div class="maps-preview">
+                        <div class="maps-layer maps-radar" data-layer="radar">
+                            <div class="radar-sweep">
+                                <div class="radar-ring"></div>
+                                <div class="radar-ring"></div>
+                                <div class="radar-dot"></div>
+                            </div>
+                        </div>
+                        <div class="maps-layer maps-airspace hidden" data-layer="airspace">
+                            <div class="airspace-zone" style="top:20%;left:15%;width:100px;height:60px">CLASS B</div>
+                            <div class="airspace-zone" style="bottom:25%;right:20%;width:80px;height:50px">TFR</div>
+                            <div class="airspace-grid">AIRSPACE MAP<br>ZONE OVERLAY</div>
+                        </div>
+                        <div class="maps-layer maps-satellite hidden" data-layer="satellite" id="satelliteLayer">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TOOL 4: CALCULATOR -->
+<section class="tool-section" id="calculator">
+    <div class="container">
+        <div class="tool-grid reverse reveal">
+            <div class="tool-info">
+                <div class="tool-number">Tool 04</div>
+                <h3>🔢 Construction Calculator</h3>
+                <p>Purpose-built for the field. Standard arithmetic plus construction-specific functions: cubic yards, area calculations, material estimations, and unit conversions.</p>
+                <div class="tool-tags">
+                    <span class="tool-tag">Standard + Construction</span>
+                    <span class="tool-tag">Unit conversion</span>
+                    <span class="tool-tag">Material calc</span>
+                </div>
+            </div>
+            <div class="tool-demo">
+                <div class="calc-demo">
+                    <div class="calc-display">
+                        <div class="calc-expr" id="calcExpr">450 × 12 × 0.5 ÷ 27</div>
+                        <div class="calc-result" id="calcResult">100</div>
+                    </div>
+                    <div class="calc-btns">
+                        <div class="calc-btn fn" data-v="C">C</div>
+                        <div class="calc-btn fn" data-v="yd³">yd³</div>
+                        <div class="calc-btn fn" data-v="%">%</div>
+                        <div class="calc-btn op" data-v="÷">÷</div>
+                        <div class="calc-btn" data-v="7">7</div>
+                        <div class="calc-btn" data-v="8">8</div>
+                        <div class="calc-btn" data-v="9">9</div>
+                        <div class="calc-btn op" data-v="×">×</div>
+                        <div class="calc-btn" data-v="4">4</div>
+                        <div class="calc-btn" data-v="5">5</div>
+                        <div class="calc-btn" data-v="6">6</div>
+                        <div class="calc-btn op" data-v="-">−</div>
+                        <div class="calc-btn" data-v="1">1</div>
+                        <div class="calc-btn" data-v="2">2</div>
+                        <div class="calc-btn" data-v="3">3</div>
+                        <div class="calc-btn op" data-v="+">+</div>
+                        <div class="calc-btn" data-v="0" style="grid-column:span 2">0</div>
+                        <div class="calc-btn" data-v=".">.</div>
+                        <div class="calc-btn eq" data-v="=">=</div>
+                    </div>
+                    <div class="calc-label">Construction Calculator</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TOOL 5: SLOPE -->
+<section class="tool-section" id="slope">
+    <div class="container">
+        <div class="tool-grid reveal">
+            <div class="tool-info">
+                <div class="tool-number">Tool 05</div>
+                <h3>📐 Slope & Grade</h3>
+                <p>Interactive slope measurement. Drag the slider to see angle, grade percentage, and rise/run calculations update live. Essential for grading inspections, drainage, and road alignment checks.</p>
+                <div class="tool-tags">
+                    <span class="tool-tag">Angle + Grade %</span>
+                    <span class="tool-tag">Rise/Run</span>
+                    <span class="tool-tag">Interactive</span>
+                </div>
+            </div>
+            <div class="tool-demo">
+                <div class="slope-demo">
+                    <div class="slope-diagram">
+                        <div class="slope-ground"></div>
+                        <div class="slope-line" id="slopeLine" style="transform:rotate(-12deg)"></div>
+                        <div class="slope-label" id="slopeLabel" style="transform:translateY(-70px)">12°</div>
+                    </div>
+                    <div class="slope-readouts">
+                        <div class="slope-readout"><div class="val" id="slopeAngle">12°</div><div class="lbl">Angle</div></div>
+                        <div class="slope-readout"><div class="val" id="slopeGrade">21.3%</div><div class="lbl">Grade</div></div>
+                        <div class="slope-readout"><div class="val" id="slopeRatio">4.7:1</div><div class="lbl">Run:Rise</div></div>
+                    </div>
+                    <input type="range" class="slope-slider" id="slopeSlider" min="0" max="45" value="12">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TOOL 6: LEVEL -->
+<section class="tool-section" id="level">
+    <div class="container">
+        <div class="tool-grid reverse reveal">
+            <div class="tool-info">
+                <div class="tool-number">Tool 06</div>
+                <h3>⚖️ Level / Inclinometer</h3>
+                <p>Precision digital level with bubble indicator. Shows real-time tilt angle with 0.1° accuracy. Perfect for verifying formwork, checking pipe grades, and ensuring proper drainage slopes.</p>
+                <div class="tool-tags">
+                    <span class="tool-tag">Bubble level</span>
+                    <span class="tool-tag">0.1° accuracy</span>
+                    <span class="tool-tag">Audio feedback</span>
+                </div>
+            </div>
+            <div class="tool-demo">
+                <div class="level-demo">
+                    <div class="level-tube">
+                        <div class="level-marks">
+                            <div class="level-mark"></div>
+                            <div class="level-mark"></div>
+                            <div class="level-mark center"></div>
+                            <div class="level-mark"></div>
+                            <div class="level-mark"></div>
+                        </div>
+                        <div class="level-bubble" id="levelBubble" style="left:50%"></div>
+                    </div>
+                    <div class="level-reading" id="levelReading">0.0°<small>Tilt angle</small></div>
+                    <div class="level-status ok" id="levelStatus">✓ LEVEL</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TOOL 7: dB METER -->
+<section class="tool-section" id="db-meter">
+    <div class="container">
+        <div class="tool-grid reveal">
+            <div class="tool-info">
+                <div class="tool-number">Tool 07</div>
+                <h3>🔊 Decibel Meter</h3>
+                <p>Real-time sound level measurement. Monitor ambient noise levels for OSHA compliance documentation. Auto-logs readings to include in your daily report.</p>
+                <div class="tool-tags">
+                    <span class="tool-tag">Real-time dB</span>
+                    <span class="tool-tag">OSHA reference</span>
+                    <span class="tool-tag">Auto-log</span>
+                </div>
+            </div>
+            <div class="tool-demo">
+                <div class="db-demo">
+                    <div class="db-bars" id="dbBars"></div>
+                    <div class="db-reading" id="dbReading">72 <small>dB — Moderate</small></div>
+                    <div class="db-scale">
+                        <span>30 dB</span>
+                        <span>60 dB</span>
+                        <span>90 dB</span>
+                        <span>120 dB</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TOOL 8: TIMER -->
+<section class="tool-section" id="timer">
+    <div class="container">
+        <div class="tool-grid reverse reveal">
+            <div class="tool-info">
+                <div class="tool-number">Tool 08</div>
+                <h3>⏱️ Timer / Stopwatch</h3>
+                <p>Track concrete pour times, curing periods, and work durations. Lap functionality for multi-phase tracking. Auto-inserts timestamps into your active report.</p>
+                <div class="tool-tags">
+                    <span class="tool-tag">Stopwatch + Timer</span>
+                    <span class="tool-tag">Lap tracking</span>
+                    <span class="tool-tag">Report timestamps</span>
+                </div>
+            </div>
+            <div class="tool-demo">
+                <div class="timer-demo">
+                    <div class="timer-display" id="timerDisplay">00:00:00</div>
+                    <div class="timer-ms" id="timerMs">.00</div>
+                    <div class="timer-btns">
+                        <div class="timer-btn" id="timerLap" title="Lap">🔄</div>
+                        <div class="timer-btn start" id="timerStart" title="Start/Stop">▶</div>
+                        <div class="timer-btn" id="timerReset" title="Reset">⏹</div>
+                    </div>
+                    <div class="timer-laps" id="timerLaps"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TOOL 9: FLASHLIGHT -->
+<section class="tool-section" id="flashlight">
+    <div class="container">
+        <div class="tool-grid reveal">
+            <div class="tool-info">
+                <div class="tool-number">Tool 09</div>
+                <h3>🔦 Flashlight</h3>
+                <p>Three modes: steady torch for culvert inspections, SOS for emergency signaling, and strobe for visibility. Uses your phone's LED — no extra equipment needed.</p>
+                <div class="tool-tags">
+                    <span class="tool-tag">Torch mode</span>
+                    <span class="tool-tag">SOS signal</span>
+                    <span class="tool-tag">Strobe</span>
+                </div>
+            </div>
+            <div class="tool-demo">
+                <div class="flash-demo">
+                    <div class="flash-glow" id="flashGlow"></div>
+                    <div class="flash-icon" id="flashIcon">🔦</div>
+                    <div style="font-size:.9rem;color:var(--gray);margin-bottom:12px" id="flashLabel">Tap to toggle</div>
+                    <div class="flash-modes">
+                        <div class="flash-mode active" data-mode="torch">Torch</div>
+                        <div class="flash-mode" data-mode="sos">SOS</div>
+                        <div class="flash-mode" data-mode="strobe">Strobe</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TOOL 10: QR SCANNER -->
+<section class="tool-section" id="qr">
+    <div class="container">
+        <div class="tool-grid reverse reveal">
+            <div class="tool-info">
+                <div class="tool-number">Tool 10</div>
+                <h3>📷 QR / Barcode Scanner</h3>
+                <p>Scan material QR codes, equipment tags, and specification labels. Data links directly to your report entry for traceability. Supports QR, UPC, Code128, and more.</p>
+                <div class="tool-tags">
+                    <span class="tool-tag">QR + Barcode</span>
+                    <span class="tool-tag">Material tracking</span>
+                    <span class="tool-tag">Report linking</span>
+                </div>
+            </div>
+            <div class="tool-demo">
+                <div class="qr-demo">
+                    <div class="qr-viewfinder">
+                        <div class="qr-corner tl"></div>
+                        <div class="qr-corner tr"></div>
+                        <div class="qr-corner bl"></div>
+                        <div class="qr-corner br"></div>
+                        <div class="qr-scanline"></div>
+                        <div class="qr-code-mini" id="qrMini"></div>
+                    </div>
+                    <div class="qr-label">Point camera at any QR code or barcode</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+    <div class="cta-glow"></div>
+    <div class="hazard-stripe" style="margin:0 auto 32px"></div>
+    <h2>All built in. <span class="highlight-text">No extra apps.</span></h2>
+    <p>Ten essential tools for construction inspectors, included with every FieldVoice Pro subscription.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1">
+        <a href="#" class="btn btn-accent">Start Free Trial <span>→</span></a>
+        <a href="demo.html" class="btn btn-ghost">Try the Live Demo</a>
+    </div>
+    <div style="margin-top:20px;font-size:.85rem;color:var(--gray2);position:relative;z-index:1">$29/mo · All tools included · 14-day free trial</div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <a href="index.html" class="nav-logo">
+                    <div class="nav-logo-icon">🎙️</div>
+                    FieldVoice Pro
+                </a>
+                <p>AI-powered voice documentation for construction inspectors.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Product</h4>
+                <a href="index.html">Home</a>
+                <a href="demo.html">Demo</a>
+                <a href="tools.html">Field Tools</a>
+                <a href="index.html#pricing">Pricing</a>
+            </div>
+            <div class="footer-col">
+                <h4>Resources</h4>
+                <a href="#">Documentation</a>
+                <a href="#">Help Center</a>
+            </div>
+            <div class="footer-col">
+                <h4>Company</h4>
+                <a href="#">About</a>
+                <a href="#">Contact</a>
+                <a href="#">Privacy</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 FieldVoice Pro. Built for inspectors who'd rather be building.
+        </div>
+    </div>
+</footer>
+
+<script>
+// ===== SCROLL REVEAL =====
+const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible') });
+}, { threshold: .1, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ===== COMPASS TICKS =====
+(function(){
+    const container = document.getElementById('compassTicks');
+    if(!container) return;
+    for(let i = 0; i < 36; i++){
+        const tick = document.createElement('div');
+        tick.className = 'compass-tick';
+        tick.style.cssText = `transform-origin:50% 110px;transform:rotate(${i*10}deg);top:0;left:calc(50% - 1px);position:absolute;width:${i%9===0?3:1}px;height:${i%9===0?14:8}px;background:rgba(255,255,255,${i%9===0?.3:.1})`;
+        container.appendChild(tick);
+    }
+    // Animate compass degree
+    let deg = 347;
+    setInterval(() => {
+        deg += (Math.random() - 0.5) * 3;
+        deg = ((deg % 360) + 360) % 360;
+        const el = document.getElementById('compassDeg');
+        if(el) el.textContent = Math.round(deg);
+    }, 200);
+})();
+
+// ===== MAP TABS =====
+document.querySelectorAll('.maps-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        const layer = tab.dataset.layer;
+        tab.closest('.maps-demo').querySelectorAll('.maps-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        tab.closest('.maps-demo').querySelectorAll('.maps-layer').forEach(l => {
+            l.classList.toggle('hidden', l.dataset.layer !== layer);
+        });
+    });
+});
+
+// Satellite terrain blocks
+(function(){
+    const el = document.getElementById('satelliteLayer');
+    if(!el) return;
+    const colors = ['#1a4a2e','#2d5a3e','#3d6b4e','#1f3d2a','#4a7b5e','#2a5038','#1e4430','#35634a'];
+    for(let i = 0; i < 80; i++){
+        const b = document.createElement('div');
+        b.className = 'terrain-block';
+        b.style.cssText = `width:18px;height:18px;background:${colors[Math.floor(Math.random()*colors.length)]};opacity:${.2+Math.random()*.4}`;
+        el.appendChild(b);
+    }
+})();
+
+// ===== CALCULATOR =====
+(function(){
+    let expr = '', result = '0';
+    const display = document.getElementById('calcResult');
+    const exprEl = document.getElementById('calcExpr');
+    document.querySelectorAll('.calc-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const v = btn.dataset.v;
+            if(v === 'C'){ expr = ''; result = '0'; }
+            else if(v === '='){
+                try {
+                    const evalExpr = expr.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');
+                    result = String(parseFloat(eval(evalExpr).toFixed(6)));
+                } catch(e){ result = 'Error'; }
+            }
+            else if(v === 'yd³'){
+                try {
+                    const evalExpr = expr.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');
+                    result = String(parseFloat((eval(evalExpr)/27).toFixed(4))) + ' yd³';
+                } catch(e){ result = 'Error'; }
+            }
+            else { expr += v; result = expr; }
+            if(display) display.textContent = result;
+            if(exprEl) exprEl.textContent = expr || ' ';
+        });
+    });
+})();
+
+// ===== SLOPE SLIDER =====
+(function(){
+    const slider = document.getElementById('slopeSlider');
+    if(!slider) return;
+    slider.addEventListener('input', () => {
+        const angle = parseInt(slider.value);
+        const line = document.getElementById('slopeLine');
+        const label = document.getElementById('slopeLabel');
+        const sAngle = document.getElementById('slopeAngle');
+        const sGrade = document.getElementById('slopeGrade');
+        const sRatio = document.getElementById('slopeRatio');
+        const grade = (Math.tan(angle * Math.PI / 180) * 100).toFixed(1);
+        const ratio = angle > 0 ? (1 / Math.tan(angle * Math.PI / 180)).toFixed(1) : '∞';
+        if(line) line.style.transform = `rotate(-${angle}deg)`;
+        if(label){ label.textContent = `${angle}°`; label.style.transform = `translateY(-${40 + angle * 1.5}px)`; }
+        if(sAngle) sAngle.textContent = `${angle}°`;
+        if(sGrade) sGrade.textContent = `${grade}%`;
+        if(sRatio) sRatio.textContent = angle > 0 ? `${ratio}:1` : '∞:1';
+    });
+})();
+
+// ===== LEVEL BUBBLE =====
+(function(){
+    const bubble = document.getElementById('levelBubble');
+    const reading = document.getElementById('levelReading');
+    const status = document.getElementById('levelStatus');
+    if(!bubble) return;
+    let angle = 0, target = 0;
+    function update(){
+        target = Math.sin(Date.now() / 3000) * 3 + Math.sin(Date.now() / 1700) * 1.5;
+        angle += (target - angle) * 0.08;
+        const pct = 50 + angle * 8;
+        bubble.style.left = pct + '%';
+        if(reading) reading.innerHTML = Math.abs(angle).toFixed(1) + '°<small>Tilt angle</small>';
+        if(status){
+            if(Math.abs(angle) < 0.3){
+                status.textContent = '✓ LEVEL';
+                status.className = 'level-status ok';
+            } else {
+                status.textContent = Math.abs(angle).toFixed(1) + '° off level';
+                status.className = 'level-status';
+                status.style.color = 'var(--accent)';
+                status.style.background = 'rgba(249,115,22,.1)';
+                status.style.border = '1px solid rgba(249,115,22,.15)';
+            }
+        }
+        requestAnimationFrame(update);
+    }
+    update();
+})();
+
+// ===== dB METER =====
+(function(){
+    const container = document.getElementById('dbBars');
+    const readingEl = document.getElementById('dbReading');
+    if(!container) return;
+    const barCount = 16;
+    const bars = [];
+    for(let i = 0; i < barCount; i++){
+        const bar = document.createElement('div');
+        bar.className = 'db-bar';
+        bar.style.width = '12px';
+        container.appendChild(bar);
+        bars.push(bar);
+    }
+    function update(){
+        const base = 55 + Math.sin(Date.now() / 800) * 15 + Math.random() * 10;
+        const db = Math.min(110, Math.max(30, base));
+        bars.forEach((bar, i) => {
+            const threshold = (i / barCount) * 100;
+            const height = db > threshold ? 20 + (db - threshold) * 0.8 : 4;
+            bar.style.height = Math.min(120, Math.max(4, height)) + 'px';
+            const ratio = i / barCount;
+            if(ratio < 0.5) bar.style.background = 'var(--green)';
+            else if(ratio < 0.75) bar.style.background = 'var(--accent)';
+            else bar.style.background = 'var(--red)';
+            bar.style.opacity = db > threshold ? '1' : '0.15';
+        });
+        const level = db < 50 ? 'Quiet' : db < 70 ? 'Moderate' : db < 85 ? 'Loud' : 'Very Loud';
+        if(readingEl) readingEl.innerHTML = `${Math.round(db)} <small>dB — ${level}</small>`;
+        requestAnimationFrame(update);
+    }
+    update();
+})();
+
+// ===== TIMER =====
+(function(){
+    let running = false, startTime = 0, elapsed = 0, lapCount = 0;
+    const display = document.getElementById('timerDisplay');
+    const msEl = document.getElementById('timerMs');
+    const lapsEl = document.getElementById('timerLaps');
+    const startBtn = document.getElementById('timerStart');
+    const resetBtn = document.getElementById('timerReset');
+    const lapBtn = document.getElementById('timerLap');
+
+    function format(ms){
+        const s = Math.floor(ms / 1000);
+        const m = Math.floor(s / 60);
+        const h = Math.floor(m / 60);
+        return `${String(h).padStart(2,'0')}:${String(m%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+    }
+
+    function tick(){
+        if(!running) return;
+        const now = Date.now() - startTime + elapsed;
+        if(display) display.textContent = format(now);
+        if(msEl) msEl.textContent = '.' + String(Math.floor((now%1000)/10)).padStart(2,'0');
+        requestAnimationFrame(tick);
+    }
+
+    if(startBtn) startBtn.addEventListener('click', () => {
+        if(running){
+            elapsed += Date.now() - startTime;
+            running = false;
+            startBtn.innerHTML = '▶';
+            startBtn.className = 'timer-btn start';
+        } else {
+            startTime = Date.now();
+            running = true;
+            startBtn.innerHTML = '⏸';
+            startBtn.className = 'timer-btn stop';
+            tick();
+        }
+    });
+
+    if(resetBtn) resetBtn.addEventListener('click', () => {
+        running = false;
+        elapsed = 0;
+        lapCount = 0;
+        if(display) display.textContent = '00:00:00';
+        if(msEl) msEl.textContent = '.00';
+        if(lapsEl) lapsEl.innerHTML = '';
+        if(startBtn){ startBtn.innerHTML = '▶'; startBtn.className = 'timer-btn start'; }
+    });
+
+    if(lapBtn) lapBtn.addEventListener('click', () => {
+        if(!running) return;
+        lapCount++;
+        const now = Date.now() - startTime + elapsed;
+        const div = document.createElement('div');
+        div.className = 'timer-lap';
+        div.innerHTML = `<span>Lap ${lapCount}</span><span>${format(now)}.${String(Math.floor((now%1000)/10)).padStart(2,'0')}</span>`;
+        if(lapsEl) lapsEl.prepend(div);
+    });
+})();
+
+// ===== FLASHLIGHT =====
+(function(){
+    let isOn = false, mode = 'torch', strobeInterval = null, sosInterval = null;
+    const icon = document.getElementById('flashIcon');
+    const glow = document.getElementById('flashGlow');
+    const label = document.getElementById('flashLabel');
+
+    function setOn(on){
+        isOn = on;
+        icon?.classList.toggle('on', on);
+        glow?.classList.toggle('on', on);
+    }
+
+    function clearIntervals(){
+        if(strobeInterval){ clearInterval(strobeInterval); strobeInterval = null; }
+        if(sosInterval){ clearInterval(sosInterval); sosInterval = null; }
+    }
+
+    function startMode(){
+        clearIntervals();
+        if(!isOn) return;
+        if(mode === 'torch'){
+            setOn(true);
+        } else if(mode === 'strobe'){
+            strobeInterval = setInterval(() => {
+                icon?.classList.toggle('on');
+                glow?.classList.toggle('on');
+            }, 100);
+        } else if(mode === 'sos'){
+            // SOS: ... --- ...
+            const pattern = [200,200,200,200,200,400,500,200,500,200,500,400,200,200,200,200,200,800];
+            let i = 0;
+            function step(){
+                if(!isOn) return;
+                const on = i % 2 === 0;
+                icon?.classList.toggle('on', on);
+                glow?.classList.toggle('on', on);
+                sosInterval = setTimeout(() => { i = (i+1) % pattern.length; step(); }, pattern[i]);
+            }
+            step();
+        }
+    }
+
+    icon?.addEventListener('click', () => {
+        isOn = !isOn;
+        if(isOn){
+            setOn(true);
+            startMode();
+            if(label) label.textContent = mode.toUpperCase() + ' ON';
+        } else {
+            clearIntervals();
+            setOn(false);
+            if(label) label.textContent = 'Tap to toggle';
+        }
+    });
+
+    document.querySelectorAll('.flash-mode').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.flash-mode').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            mode = btn.dataset.mode;
+            if(isOn){ clearIntervals(); startMode(); if(label) label.textContent = mode.toUpperCase() + ' ON'; }
+        });
+    });
+})();
+
+// ===== QR CODE MINI =====
+(function(){
+    const el = document.getElementById('qrMini');
+    if(!el) return;
+    // Generate a simple decorative pattern
+    const pattern = [
+        1,1,1,1,1,1,1,0,
+        1,0,0,0,0,0,1,0,
+        1,0,1,1,1,0,1,0,
+        1,0,1,0,1,0,1,1,
+        1,0,1,1,1,0,1,0,
+        1,0,0,0,0,0,1,1,
+        1,1,1,1,1,1,1,0,
+        0,0,0,1,0,1,0,1
+    ];
+    pattern.forEach(v => {
+        const cell = document.createElement('div');
+        cell.className = 'qr-cell ' + (v ? 'b' : 'w');
+        el.appendChild(cell);
+    });
+})();
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+        e.preventDefault();
+        const t = document.querySelector(a.getAttribute('href'));
+        if(t) t.scrollIntoView({ behavior:'smooth', block:'start' });
+        document.querySelector('.mobile-menu')?.classList.remove('open');
+    });
+});
+</script>
+</body>
+</html>

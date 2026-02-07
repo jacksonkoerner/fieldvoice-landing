@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Settings - Inspector Profile</title>
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
+    <meta name="theme-color" content="#0a1628">
+
+    <!-- iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FieldVoice">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./js/config.js"></script>
+    <script src="./js/supabase-utils.js"></script>
+    <script src="./js/pwa-utils.js"></script>
+    <script src="./js/ui-utils.js"></script>
+    <script src="./js/storage-keys.js"></script>
+    <script src="./js/indexeddb-utils.js"></script>
+    <script src="./js/data-layer.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dot-navy': '#0a1628',
+                        'dot-blue': '#1e3a5f',
+                        'dot-slate': '#334155',
+                        'dot-orange': '#ea580c',
+                        'dot-yellow': '#f59e0b',
+                        'safety-green': '#16a34a',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+        .header-stripe {
+            background: repeating-linear-gradient(-45deg, #f59e0b, #f59e0b 10px, #0a1628 10px, #0a1628 20px);
+            height: 4px;
+            padding-top: env(safe-area-inset-top);
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+    <div class="header-stripe"></div>
+
+    <div class="max-w-lg mx-auto min-h-screen flex flex-col">
+
+        <!-- HEADER -->
+        <header class="bg-dot-navy text-white p-4">
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="w-10 h-10 flex items-center justify-center border border-slate-600 hover:bg-slate-800 transition-colors">
+                    <i class="fas fa-arrow-left text-slate-400"></i>
+                </a>
+                <div>
+                    <p class="text-[10px] font-bold text-dot-yellow uppercase tracking-widest">Settings</p>
+                    <h1 class="text-xl font-bold">Inspector Profile</h1>
+                </div>
+            </div>
+        </header>
+
+        <!-- FORM -->
+        <main class="flex-1 p-4 space-y-4">
+
+            <!-- Personal Information -->
+            <section class="bg-white border-2 border-slate-200">
+                <div class="bg-safety-green text-white p-4">
+                    <h2 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                        <i class="fas fa-user-shield"></i>
+                        Personal Information
+                    </h2>
+                </div>
+                <div class="p-4 space-y-4">
+                    <div>
+                        <label class="text-xs font-bold text-dot-blue uppercase tracking-wider">Inspector Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="inspectorName" class="w-full mt-2 bg-white border-2 border-slate-300 px-4 py-3 text-sm text-slate-800 focus:outline-none focus:border-dot-blue" placeholder="e.g., Andrew Stiebing">
+                        <p class="text-xs text-slate-400 mt-1">Your full name as it appears on reports</p>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-dot-blue uppercase tracking-wider">Title <span class="text-red-500">*</span></label>
+                        <input type="text" id="title" class="w-full mt-2 bg-white border-2 border-slate-300 px-4 py-3 text-sm text-slate-800 focus:outline-none focus:border-dot-blue" placeholder="e.g., RPR">
+                        <p class="text-xs text-slate-400 mt-1">RPR = Resident Project Representative</p>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-dot-blue uppercase tracking-wider">Company / Firm <span class="text-red-500">*</span></label>
+                        <input type="text" id="company" class="w-full mt-2 bg-white border-2 border-slate-300 px-4 py-3 text-sm text-slate-800 focus:outline-none focus:border-dot-blue" placeholder="e.g., Burns & McDonnell">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-dot-blue uppercase tracking-wider">Email <span class="text-slate-400 font-normal">(optional)</span></label>
+                        <input type="email" id="email" class="w-full mt-2 bg-white border-2 border-slate-300 px-4 py-3 text-sm text-slate-800 focus:outline-none focus:border-dot-blue" placeholder="e.g., astiebing@burnsmcd.com">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-dot-blue uppercase tracking-wider">Phone <span class="text-slate-400 font-normal">(optional)</span></label>
+                        <input type="tel" id="phone" class="w-full mt-2 bg-white border-2 border-slate-300 px-4 py-3 text-sm text-slate-800 focus:outline-none focus:border-dot-blue" placeholder="e.g., (555) 123-4567">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Signature Preview -->
+            <section class="bg-white border-2 border-slate-200">
+                <div class="bg-dot-blue text-white p-4">
+                    <h2 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                        <i class="fas fa-signature"></i>
+                        Report Signature Preview
+                    </h2>
+                </div>
+                <div class="p-4">
+                    <p class="text-xs text-slate-500 uppercase mb-2">Completed By:</p>
+                    <p id="signaturePreview" class="text-sm font-bold text-slate-700 bg-slate-50 p-3 border border-slate-200">
+                        --
+                    </p>
+                    <p class="text-xs text-slate-400 mt-2">This is how your name will appear on reports</p>
+                </div>
+            </section>
+
+            <!-- Project Management Link -->
+            <a href="projects.html" class="block bg-white border-2 border-dot-blue p-4 hover:bg-dot-blue/5 transition-colors">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-dot-blue flex items-center justify-center">
+                        <i class="fas fa-building text-white text-lg"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-bold text-dot-blue uppercase text-sm">Manage Projects</p>
+                        <p class="text-xs text-slate-500">Configure projects, contractors, and equipment</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-dot-blue"></i>
+                </div>
+            </a>
+
+            <!-- Setup & Permissions -->
+            <a href="permissions.html" class="block bg-white border border-slate-300 p-4 hover:bg-slate-50 transition-colors">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-dot-navy flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-dot-yellow"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-bold text-slate-700">Setup & Permissions</p>
+                        <p class="text-xs text-slate-500">Microphone, camera, and location access</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-slate-400"></i>
+                </div>
+            </a>
+
+            <!-- Troubleshooting -->
+            <section class="bg-white border-2 border-slate-200">
+                <div class="bg-dot-slate text-white p-4">
+                    <h2 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                        <i class="fas fa-wrench"></i>
+                        Troubleshooting
+                    </h2>
+                </div>
+                <div class="p-4 space-y-3">
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Having issues with the app not loading correctly, features not working, or want to ensure you have the latest version?
+                        Use the refresh option below to clear the app cache and download fresh files.
+                    </p>
+                    <p class="text-xs text-slate-400">
+                        This clears cached files only - your reports, settings, and project data are safely stored separately.
+                    </p>
+                    <button onclick="refreshApp()" class="w-full p-4 bg-slate-500 text-white font-bold uppercase hover:bg-slate-600 transition-colors flex items-center justify-center gap-2">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh App
+                    </button>
+                </div>
+            </section>
+
+            <!-- Admin -->
+            <section class="bg-white border-2 border-red-300">
+                <div class="bg-red-600 text-white p-4">
+                    <h2 class="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Admin
+                    </h2>
+                </div>
+                <div class="p-4 space-y-3">
+                    <button id="reset-all-btn" onclick="resetAllData()" class="w-full p-4 bg-white border-2 border-red-500 text-red-600 font-bold uppercase hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-2">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Reset All Data
+                    </button>
+                    <p class="text-xs text-slate-500 text-center">
+                        Deletes all local data. Device will act like fresh install.
+                    </p>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- SAVE & REFRESH BUTTONS -->
+        <div class="p-4 bg-white border-t border-slate-200 space-y-3">
+            <!-- Unsaved changes indicator -->
+            <div id="dirtyBadge" class="hidden bg-dot-orange/10 border border-dot-orange text-dot-orange px-4 py-2 text-sm font-medium flex items-center gap-2">
+                <i class="fas fa-exclamation-circle"></i>
+                You have unsaved changes
+            </div>
+
+            <!-- Save Button -->
+            <button id="saveBtn" onclick="saveSettings()" class="w-full p-4 bg-safety-green hover:bg-green-700 text-white font-bold uppercase transition-colors flex items-center justify-center gap-2">
+                <i class="fas fa-save"></i>
+                Save Profile
+            </button>
+
+            <!-- Refresh from Cloud Button -->
+            <button onclick="refreshFromCloud()" class="w-full p-3 bg-white border-2 border-dot-blue text-dot-blue font-bold uppercase hover:bg-dot-blue hover:text-white transition-colors flex items-center justify-center gap-2">
+                <i class="fas fa-cloud-download-alt"></i>
+                Refresh from Cloud
+            </button>
+            <p class="text-xs text-slate-400 text-center">Pull latest profile from cloud (must Save to keep)</p>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="bg-dot-navy text-center py-3">
+            <p class="text-[10px] text-slate-500 uppercase tracking-widest">
+                <i class="fas fa-shield-alt mr-1"></i>
+                DOT Compliant Field Documentation System
+            </p>
+        </footer>
+    </div>
+
+    <!-- Settings Page Logic -->
+    <script src="./js/settings.js"></script>
+
+    <!-- Refresh App Confirmation Modal -->
+    <div id="refresh-modal" class="fixed inset-0 bg-black/70 z-[9998] hidden items-center justify-center p-4">
+        <div class="bg-white max-w-sm w-full shadow-xl">
+            <!-- Modal Header -->
+            <div class="bg-dot-slate text-white p-4 text-center">
+                <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-sync-alt text-3xl"></i>
+                </div>
+                <h3 class="text-lg font-bold uppercase">Refresh App</h3>
+                <p class="text-sm text-slate-300 mt-1">Update to the latest version</p>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-4 space-y-4">
+                <!-- Instructions -->
+                <div class="space-y-3">
+                    <p class="text-sm text-slate-600 font-medium">After refreshing, follow these steps:</p>
+                    <ol class="space-y-2 text-sm text-slate-600">
+                        <li class="flex items-start gap-3">
+                            <span class="w-6 h-6 bg-dot-blue text-white flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
+                            <span>Wait for the page to reload automatically</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="w-6 h-6 bg-dot-blue text-white flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
+                            <span>Close the app completely (swipe up from app switcher)</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="w-6 h-6 bg-dot-blue text-white flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
+                            <span>Reopen the app from your home screen</span>
+                        </li>
+                    </ol>
+                </div>
+
+                <!-- Reassurance -->
+                <div class="bg-safety-green/10 border border-safety-green/30 p-3">
+                    <p class="text-xs text-safety-green font-medium flex items-center gap-2">
+                        <i class="fas fa-shield-alt"></i>
+                        Your reports and settings will be preserved
+                    </p>
+                </div>
+            </div>
+
+            <!-- Modal Actions -->
+            <div class="p-4 border-t border-slate-200 space-y-2">
+                <button onclick="executeRefresh()" class="w-full p-4 bg-dot-slate text-white font-bold uppercase hover:bg-slate-700 transition-colors flex items-center justify-center gap-2">
+                    <i class="fas fa-sync-alt"></i>
+                    Continue
+                </button>
+                <button onclick="hideRefreshModal()" class="w-full p-3 bg-slate-100 text-slate-600 font-bold uppercase hover:bg-slate-200 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offline Banner -->
+    <div id="offline-banner" class="fixed top-0 left-0 right-0 bg-yellow-500 text-yellow-900 text-center py-2 px-4 font-bold text-sm z-[9999] transform -translate-y-full transition-transform duration-300" style="display: none;">
+        <i class="fas fa-wifi-slash mr-2"></i>You are offline - Some features may be unavailable
+    </div>
+
+    <!-- Initialize PWA features -->
+    <script>initPWA();</script>
+</body>
+</html>
